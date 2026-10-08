@@ -9,7 +9,7 @@
 <style>
 input{padding:10px;border:1px solid var(--line);border-radius:10px;font-size:16px} .report{width:100%;border-collapse:collapse;min-width:740px}.report th,.report td{padding:12px;text-align:left;border-bottom:1px solid var(--line)}.repack{background:#eee5ff}.admin-inner{max-width:1500px;margin:auto}.dialog{max-height:92vh;overflow:auto}
 .adjacent{background:#f0f1f4!important;color:#6f7378}.week-row td{background:#e9e7ff!important;color:#4d43a8;font-weight:700;padding:9px 12px;border-top:2px solid #c9c4ff}.month-tag{display:inline-block;margin-top:5px;padding:2px 7px;border-radius:10px;background:#e1e3e8;font-size:10px;color:#62666b}
-.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:150;background:#26272a;color:#fff;border-radius:12px;padding:10px 12px;display:none;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);max-width:calc(100% - 24px)}.toast.show{display:flex}.toast button{background:#fff;color:#4d43a8;font-weight:700;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:150;background:#26272a;color:#fff;border-radius:12px;padding:10px 12px;display:none;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);max-width:calc(100% - 24px)}.toast.show{display:flex}.toast button{background:#fff;color:#4d43a8;font-weight:700;white-space:nowrap}.sync-status{display:inline-block;margin-top:6px;font-size:12px;color:#387b4b}.sync-status.error{color:#c62828}
 :root{--bg:#f5f6f8;--card:#fff;--text:#202124;--muted:#70757a;--line:#e3e5e8;--accent:#6d5dfc;--weekend:#fff3f3;--green:#e8f7ee;--green-text:#168447;--orange:#fff4df;--orange-text:#b86b00}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text)}
 .wrap{max-width:1500px;margin:auto;padding:24px}
@@ -50,7 +50,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 <div class="card" style="max-width:420px;width:100%;padding:28px"><h1 style="font-size:24px">График ПВЗ</h1><div class="sub" style="margin-bottom:20px">Вход для управления графиком</div><div class="field"><label>Роль</label><select id="loginRole" style="width:100%"><option value="admin">Администратор</option><option value="owner">Владелец</option></select></div><div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="Введите пароль" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px"></div><button class="primary" style="width:100%" onclick="login()">Войти</button><div id="loginError" style="color:#c62828;margin-top:10px;font-size:13px"></div></div></div>
 <div class="wrap">
   <div class="header">
-    <div><h1>График ПВЗ — до конца 2026 года</h1><div class="sub">Полные недели: 28 сентября 2026 — 3 января 2027 · 6 сотрудников</div></div>
+    <div><h1>График ПВЗ — до конца 2026 года</h1><div class="sub">Полные недели: 28 сентября 2026 — 3 января 2027 · 6 сотрудников</div><span class="sync-status" id="syncStatus">Облачная синхронизация</span></div>
     <div class="stats" id="stats"></div>
   </div>
 
@@ -94,19 +94,40 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 
 <script>
 const employees=["Ирина","Чернышёва Анна","Владимирова Татьяна","Ксения","Погодин Кирилл","Злата"];
-const ADMIN_PASSWORD_HASH='6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6';
-const OWNER_PASSWORD_HASH='ecbeb02e1d5fae04177a3a5833919fea5437a87c612562d62005977a3d247714';
+const API_URL='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-sync';
+const API_KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_';
 const GRAPH_START='2026-09-28',GRAPH_END='2027-01-03';
 const labels={hourly:'Почасовой выход',repack:'Переупаковка'};
 const emp=document.getElementById('employee'),modalEmp=document.getElementById('modalEmployee');
-let session=null,editing=null,lastRemoved=null,undoTimer=null;
-function load(){try{
+let session=null,editing=null,lastRemoved=null,undoTimer=null,scheduleVersion=0,paymentVersion=0;
+let scheduleSaveQueue=Promise.resolve(),paymentSaveQueue=Promise.resolve(),pendingSaves=0;
+function loadLocalSchedule(){try{
  const source=JSON.parse(localStorage.getItem('pvzOct2026')||'{}'),v={};let migrated=false;
  Object.entries(source).forEach(([oldKey,value])=>{const m=oldKey.match(/^(\d{1,2})_(full|late|hourly|repack)$/),newKey=m?`2026-10-${String(m[1]).padStart(2,'0')}_${m[2]}`:oldKey;if(newKey!==oldKey)migrated=true;v[newKey]=value;(Array.isArray(value)?value:[value]).forEach(r=>{const i=Number((r.employee||'').replace('Сотрудник ',''))-1;if(i>=0&&i<6)r.employee=employees[i]})});
  if(migrated)localStorage.setItem('pvzOct2026',JSON.stringify(v));return v;
  }catch(e){return {}}}
-let data=load();
+let data=loadLocalSchedule();
 let payments={};try{payments=JSON.parse(localStorage.getItem('pvzPaymentsOct2026')||'{}')}catch(e){}
+function plainObject(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function setSyncStatus(text,error=false){const el=document.getElementById('syncStatus');el.textContent=text;el.classList.toggle('error',error)}
+async function api(action,payload={},token=session?.token||''){
+ const headers={'Content-Type':'application/json','apikey':API_KEY};if(token)headers.Authorization='Bearer '+token;
+ let response;try{response=await fetch(API_URL,{method:'POST',headers,body:JSON.stringify({action,...payload})})}catch(e){throw new Error('Нет связи с облачной базой')}
+ let result={};try{result=await response.json()}catch(e){}
+ if(!response.ok)throw new Error(result.error||'Ошибка облачной базы');return result;
+}
+async function persistSchedule(snapshot){const result=await api('saveSchedule',{payload:snapshot,expectedVersion:scheduleVersion});scheduleVersion=Number(result.version);return result}
+async function persistPayments(snapshot){const result=await api('savePayments',{payload:snapshot,expectedVersion:paymentVersion});paymentVersion=Number(result.version);return result}
+function queueScheduleSave(snapshot){pendingSaves++;setSyncStatus('Сохраняю изменения…');scheduleSaveQueue=scheduleSaveQueue.catch(()=>{}).then(()=>persistSchedule(snapshot)).then(()=>{pendingSaves--;if(!pendingSaves)setSyncStatus('Все изменения сохранены')},e=>{pendingSaves--;setSyncStatus(e.message,true);alert(e.message);throw e})}
+function queuePaymentSave(snapshot){pendingSaves++;setSyncStatus('Сохраняю выплаты…');paymentSaveQueue=paymentSaveQueue.catch(()=>{}).then(()=>persistPayments(snapshot)).then(()=>{pendingSaves--;if(!pendingSaves)setSyncStatus('Все изменения сохранены')},e=>{pendingSaves--;setSyncStatus(e.message,true);alert(e.message);throw e})}
+async function hydrateRemote(){
+ const localSchedule=loadLocalSchedule(),localPayments=payments,remote=await api('load');
+ scheduleVersion=Number(remote.schedule?.version||0);data=plainObject(remote.schedule?.payload)?remote.schedule.payload:{};
+ if(!Object.keys(data).length&&Object.keys(localSchedule).length){data=localSchedule;await persistSchedule(clone(data))}
+ if(owner()){paymentVersion=Number(remote.payments?.version||0);payments=plainObject(remote.payments?.payload)?remote.payments.payload:{};if(!Object.keys(payments).length&&Object.keys(localPayments).length){payments=localPayments;await persistPayments(clone(payments))}}else payments={};
+ localStorage.setItem('pvzOct2026',JSON.stringify(data));if(owner())localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments));setSyncStatus('Данные загружены из облака');
+}
 function key(dateId,t){return dateId+'_'+t}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return n.toLocaleString('ru-RU',{maximumFractionDigits:2})+' ₽'}
@@ -128,7 +149,7 @@ function shiftInfo(dateId,t){
  if(t==='late')return {start:'15:00',end:'22:00',hours:7,pay:1500,label:'Вторая смена'};
  return null;
 }
-function save(){try{localStorage.setItem('pvzOct2026',JSON.stringify(data))}catch(e){alert('Не удалось сохранить данные в браузере. Не закрывайте страницу.')}render()}
+function save(){try{localStorage.setItem('pvzOct2026',JSON.stringify(data))}catch(e){}render();queueScheduleSave(clone(data))}
 function records(){const out=[];Object.entries(data).forEach(([k,v])=>{const m=k.match(/^(\d{4}-\d{2}-\d{2})_(full|late|hourly|repack)$/);if(!m)return;const dateId=m[1],t=m[2],fixed=shiftInfo(dateId,t);(Array.isArray(v)?v:[v]).forEach((r,i)=>out.push({...r,dateId,t,i,hours:fixed?fixed.hours:Number(r.hours),pay:fixed?fixed.pay:Number(r.pay)}))});return out.sort((a,b)=>a.dateId.localeCompare(b.dateId))}
 function totals(n){const rs=records().filter(r=>r.employee===n);return {full:rs.filter(r=>r.t==='full'||(r.t==='late'&&isWeekend(r.dateId))).length,late:rs.filter(r=>r.t==='late'&&!isWeekend(r.dateId)).length,hourly:num(rs.filter(r=>r.t==='hourly').reduce((a,r)=>a+r.hours,0)),repack:num(rs.filter(r=>r.t==='repack').reduce((a,r)=>a+r.hours,0)),hours:num(rs.reduce((a,r)=>a+r.hours,0)),pay:num(rs.reduce((a,r)=>a+r.pay,0)),count:rs.length}}
 function render(){
@@ -178,14 +199,16 @@ function weeklyRows(){
  return weekDefinitions().flatMap(w=>employees.map(n=>({...w,n,pay:num(records().filter(r=>r.employee===n&&r.dateId>=w.from&&r.dateId<=w.to).reduce((a,r)=>a+r.pay,0)),k:w.id+'_'+n})));
 }
 function renderWeekly(){if(!owner())return;const selected=document.getElementById('paymentWeekFilter').value,rows=weeklyRows().filter(w=>selected==='all'||w.from===selected);document.getElementById('weeklyReport').innerHTML='<table class="report"><tr><th>Неделя</th><th>Дата выплаты</th><th>Сотрудник</th><th>Начислено</th><th>Статус</th></tr>'+rows.map(w=>{const paid=payments[w.k],encoded=encodeURIComponent(w.k);return `<tr><td>${w.period}</td><td>${w.date}</td><td>${esc(w.n)}</td><td>${money(w.pay)}</td><td>${paid?`Отмечено выплаченным: ${money(paid.amount)}${paid.amount!==w.pay?'<br><b>Начисление изменилось — проверьте разницу</b>':''}<br><button onclick="markPaid('${encoded}',false)">Снять отметку</button>`:`<button onclick="markPaid('${encoded}',true)">Отметить выплату</button>`}</td></tr>`}).join('')+'</table>'}
-function markPaid(encodedKey,value){if(!owner())return;const keyValue=decodeURIComponent(encodedKey),w=weeklyRows().find(x=>x.k===keyValue);if(!w)return;if(value&&!confirm('Подтвердить, что '+w.n+' получил(а) '+money(w.pay)+' за '+w.period+'?'))return;if(!value&&!confirm('Снять отметку выплаты?'))return;const next={...payments};if(value)next[w.k]={amount:w.pay,markedAt:new Date().toISOString()};else delete next[w.k];try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(next));payments=next;renderWeekly()}catch(e){alert('Не удалось сохранить отметку выплаты.')}}
+function markPaid(encodedKey,value){if(!owner())return;const keyValue=decodeURIComponent(encodedKey),w=weeklyRows().find(x=>x.k===keyValue);if(!w)return;if(value&&!confirm('Подтвердить, что '+w.n+' получил(а) '+money(w.pay)+' за '+w.period+'?'))return;if(!value&&!confirm('Снять отметку выплаты?'))return;const next={...payments};if(value)next[w.k]={amount:w.pay,markedAt:new Date().toISOString()};else delete next[w.k];payments=next;try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}renderWeekly();queuePaymentSave(clone(payments))}
 function showAdmin(){if(!owner())return;renderAdmin();document.getElementById('adminPanel').style.display='block';document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'})}
 function exportReport(){if(!owner())return;const rows=[['Сотрудник','Смены 3000','Смены 1500','Часы 200','Часы 300','Всего часов','Начислено'],...employees.map(n=>{const a=totals(n);return [n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay]})];const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='Зарплата_до_конца_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-async function sha256(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('')}
-async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,h=await sha256(p),ok=(role==='admin'&&h===ADMIN_PASSWORD_HASH)||(role==='owner'&&h===OWNER_PASSWORD_HASH);if(!ok){document.getElementById('loginError').textContent='Неверный пароль';return}session={role,name:role==='owner'?'Владелец':'Администратор'};emp.value=employees[0];emp.disabled=false;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
-function logout(){session=null;lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML=''}
+function enterApp(){emp.value=employees[0];emp.disabled=false;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
+async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,err=document.getElementById('loginError');err.textContent='Выполняется вход…';try{const result=await api('login',{role,password:p},'');session={role:result.role,name:result.role==='owner'?'Владелец':'Администратор',token:result.token};sessionStorage.setItem('pvzAuthToken',result.token);sessionStorage.setItem('pvzAuthRole',result.role);await hydrateRemote();enterApp()}catch(e){session=null;err.textContent=e.message}}
+async function logout(){const token=session&&session.token;session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');if(token)api('logout',{},token).catch(()=>{});lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML='';setSyncStatus('Вход не выполнен')}
+async function resumeSession(){const token=sessionStorage.getItem('pvzAuthToken'),role=sessionStorage.getItem('pvzAuthRole');if(!token||!['admin','owner'].includes(role))return;session={role,name:role==='owner'?'Владелец':'Администратор',token};try{await hydrateRemote();enterApp()}catch(e){session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');setSyncStatus('Требуется повторный вход',true)}}
 for(const id of ['employee','modalEmployee'])employees.forEach(n=>document.getElementById(id).add(new Option(n,n)));
 weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from));document.getElementById('paymentWeekFilter').add(new Option(w.period,w.from))});
 emp.onchange=render;document.getElementById('weekFilter').onchange=render;document.getElementById('paymentWeekFilter').onchange=renderWeekly;for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
 document.getElementById('loginPass').onkeydown=e=>{if(e.key==='Enter')login()};
+resumeSession();
 </script></body></html>
