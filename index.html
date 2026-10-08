@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Электронный график смен ПВЗ">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>График ПВЗ — Октябрь 2026</title>
+<style>
+input{padding:10px;border:1px solid var(--line);border-radius:10px;font-size:16px} .report{width:100%;border-collapse:collapse;min-width:740px}.report th,.report td{padding:12px;text-align:left;border-bottom:1px solid var(--line)}.repack{background:#eee5ff}.admin-inner{max-width:1500px;margin:auto}.dialog{max-height:92vh;overflow:auto}
+.adjacent{background:#f0f1f4!important;color:#6f7378}.week-row td{background:#e9e7ff!important;color:#4d43a8;font-weight:700;padding:9px 12px;border-top:2px solid #c9c4ff}.month-tag{display:inline-block;margin-top:5px;padding:2px 7px;border-radius:10px;background:#e1e3e8;font-size:10px;color:#62666b}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:150;background:#26272a;color:#fff;border-radius:12px;padding:10px 12px;display:none;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);max-width:calc(100% - 24px)}.toast.show{display:flex}.toast button{background:#fff;color:#4d43a8;font-weight:700;white-space:nowrap}
+:root{--bg:#f5f6f8;--card:#fff;--text:#202124;--muted:#70757a;--line:#e3e5e8;--accent:#6d5dfc;--weekend:#fff3f3;--green:#e8f7ee;--green-text:#168447;--orange:#fff4df;--orange-text:#b86b00}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text)}
+.wrap{max-width:1500px;margin:auto;padding:24px}
+.header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}
+h1{margin:0 0 6px;font-size:28px}.sub{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.04)}
+.controls{padding:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+select,button{border:1px solid var(--line);background:white;border-radius:10px;padding:10px 13px;font-size:14px;cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fafafa}.stat b{font-size:18px}
+.table-wrap{overflow:auto;margin-top:16px}.calendar{min-width:1180px;border-collapse:separate;border-spacing:0;width:100%}
+.calendar th,.calendar td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);vertical-align:top}
+.calendar th{position:sticky;top:0;background:#fafafa;padding:12px 8px;font-size:13px;z-index:2}
+.calendar th:first-child,.calendar td:first-child{position:sticky;left:0;z-index:3;background:#fff}
+.calendar th:first-child{z-index:4}.date{width:100px;text-align:left;padding:10px}.weekend{background:var(--weekend)!important}
+.daynum{font-weight:700}.dow{font-size:12px;color:var(--muted);margin-top:3px}
+.cell{min-width:180px;padding:8px}
+.shift{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:7px;background:#fff}
+.shift:last-child{margin-bottom:0}.shift .top{display:flex;justify-content:space-between;gap:5px;font-weight:650;font-size:12px}
+.shift small{display:block;color:var(--muted);margin:4px 0}
+.free{background:var(--green);border-color:#bfe8cf}.free .status{color:var(--green-text)}
+.busy{background:#f0f1f3}.busy .status{color:#6b7075}
+.hourly{background:var(--orange);border-color:#f2d69e}.hourly .status{color:var(--orange-text)}
+.shift button{width:100%;padding:7px;font-size:12px;margin-top:4px}
+.status{font-size:11px}.price{font-weight:700}
+.empty{color:var(--muted);font-size:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:14px 16px;color:#555;font-size:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}.d1{background:#bfe8cf}.d2{background:#d8dadd}.d3{background:#f2d69e}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.38);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+.modal.show{display:flex}.dialog{background:#fff;border-radius:16px;max-width:430px;width:100%;padding:20px}.dialog h2{margin:0 0 4px}.dialog p{color:var(--muted);margin:0 0 18px}
+.formrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field input,.field select{width:100%}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+@media(max-width:700px){.wrap{padding:12px}h1{font-size:22px}.header{display:block}.controls{margin-top:12px}}
+</style>
+</head>
+<body>
+<div id="login" style="position:fixed;inset:0;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100">
+<div class="card" style="max-width:420px;width:100%;padding:28px"><h1 style="font-size:24px">График ПВЗ</h1><div class="sub" style="margin-bottom:20px">Вход для управления графиком</div><div class="field"><label>Роль</label><select id="loginRole" style="width:100%"><option value="admin">Администратор</option><option value="owner">Владелец</option></select></div><div class="field"><label>Пароль</label><input id="loginPass" type="password" placeholder="Введите пароль" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px"></div><button class="primary" style="width:100%" onclick="login()">Войти</button><div id="loginError" style="color:#c62828;margin-top:10px;font-size:13px"></div></div></div>
+<div class="wrap">
+  <div class="header">
+    <div><h1>График ПВЗ — до конца 2026 года</h1><div class="sub">Полные недели: 28 сентября 2026 — 3 января 2027 · 6 сотрудников</div></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="card controls">
+    <label>Назначить сотрудника:
+      <select id="employee"></select>
+    </label>
+    <label>Неделя:
+      <select id="weekFilter">
+        <option value="all">Все недели</option>
+      </select>
+    </label>
+    <button onclick="clearMine()">Очистить записи сотрудника</button><button id="adminBtn" style="display:none" onclick="showAdmin()">Панель владельца</button><button onclick="logout()">Выйти</button>
+  </div>
+
+  <div class="card table-wrap">
+    <table class="calendar" id="calendar"></table>
+    <div class="legend">
+      <span><i class="dot d1"></i>свободно</span>
+      <span><i class="dot d2"></i>занято</span>
+      <span><i class="dot d3"></i>почасовой выход</span>
+      <span>Суббота и воскресенье выделены отдельно</span>
+    </div>
+  </div>
+</div>
+<div class="toast" id="undoToast"><span id="undoText">Запись снята</span><button type="button" onclick="undoRemove()">Вернуть</button></div>
+<div class="card" id="adminPanel" style="display:none;margin-top:16px;padding:18px"><h2 style="margin-top:0">Панель владельца</h2><div class="admin-inner"><p>Период графика: 28 сентября 2026 — 3 января 2027 · начисления по записанным выходам</p><button onclick="exportReport()">Скачать отчёт CSV</button><div id="adminSummary" style="overflow:auto"></div><h3>Еженедельные выплаты</h3><p>Период: понедельник–воскресенье. Выплата: следующий понедельник. Начисления основаны на записанных выходах; перед выплатой проверьте фактически отработанное время.</p><label>Неделя выплат: <select id="paymentWeekFilter"><option value="all">Все недели</option></select></label><div id="weeklyReport" style="overflow:auto;margin-top:12px"></div><h3>Записи сотрудника</h3><div id="adminRecords" style="overflow:auto"></div></div></div>
+<div class="modal" id="modal">
+  <div class="dialog">
+    <h2>Запись на работу</h2>
+    <p id="modalDate"></p><div class="field"><label>Дата</label><input id="workDate" type="date" min="2026-09-28" max="2027-01-03" value="2026-10-01"></div><div class="field"><label>Тип работы</label><select id="workType"><option value="hourly">Почасовой выход</option><option value="repack">Переупаковка</option><option value="full">Полная смена №1 · 08:00–22:00</option><option value="late">Смена №2 (в выходные полная)</option></select></div>
+    <div class="field"><label>Сотрудник</label><select id="modalEmployee"></select></div>
+    <div class="formrow">
+      <div class="field"><label>Начало</label><input id="start" type="time" value="10:00"></div>
+      <div class="field"><label>Окончание</label><input id="end" type="time" value="14:00"></div>
+    </div>
+    <div id="hourCost" style="font-weight:700">0 часов · 0 ₽</div>
+    <div class="actions"><button onclick="closeModal()">Отмена</button><button class="primary" onclick="saveHourly()">Записать</button></div>
+  </div>
+</div>
+
+<script>
+const employees=["Ирина","Чернышёва Анна","Владимирова Татьяна","Ксения","Погодин Кирилл","Злата"];
+const ADMIN_PASSWORD_HASH='6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6';
+const OWNER_PASSWORD_HASH='ecbeb02e1d5fae04177a3a5833919fea5437a87c612562d62005977a3d247714';
+const GRAPH_START='2026-09-28',GRAPH_END='2027-01-03';
+const labels={hourly:'Почасовой выход',repack:'Переупаковка'};
+const emp=document.getElementById('employee'),modalEmp=document.getElementById('modalEmployee');
+let session=null,editing=null,lastRemoved=null,undoTimer=null;
+function load(){try{
+ const source=JSON.parse(localStorage.getItem('pvzOct2026')||'{}'),v={};let migrated=false;
+ Object.entries(source).forEach(([oldKey,value])=>{const m=oldKey.match(/^(\d{1,2})_(full|late|hourly|repack)$/),newKey=m?`2026-10-${String(m[1]).padStart(2,'0')}_${m[2]}`:oldKey;if(newKey!==oldKey)migrated=true;v[newKey]=value;(Array.isArray(value)?value:[value]).forEach(r=>{const i=Number((r.employee||'').replace('Сотрудник ',''))-1;if(i>=0&&i<6)r.employee=employees[i]})});
+ if(migrated)localStorage.setItem('pvzOct2026',JSON.stringify(v));return v;
+ }catch(e){return {}}}
+let data=load();
+let payments={};try{payments=JSON.parse(localStorage.getItem('pvzPaymentsOct2026')||'{}')}catch(e){}
+function key(dateId,t){return dateId+'_'+t}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return n.toLocaleString('ru-RU',{maximumFractionDigits:2})+' ₽'}
+function num(n){return Number(n.toFixed(2))}
+function admin(){return session&&(session.role==='admin'||session.role==='owner')}
+function owner(){return session&&session.role==='owner'}
+function allowed(){return admin()}
+function dateObject(dateId){const [y,m,d]=dateId.split('-').map(Number);return new Date(y,m-1,d)}
+function isoDate(dt){return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`}
+function addDays(dateId,days){const dt=dateObject(dateId);dt.setDate(dt.getDate()+days);return isoDate(dt)}
+function weekDefinitions(){const out=[];for(let from=GRAPH_START;from<=GRAPH_END;from=addDays(from,7)){const to=addDays(from,6),payment=addDays(from,7);out.push({id:payment,from,to,period:`${formatDate(from)} — ${formatDate(to)}`,date:formatDate(payment)})}return out}
+function calendarDates(){const out=[];for(let dateId=GRAPH_START;dateId<=GRAPH_END;dateId=addDays(dateId,1)){const dt=dateObject(dateId);out.push({dateId,dt,inPeriod:dt.getFullYear()===2026&&dt.getMonth()>=9})}return out}
+function visibleDates(){const start=document.getElementById('weekFilter').value,dates=calendarDates();if(start==='all')return dates;const index=dates.findIndex(x=>x.dateId===start);return index<0?dates:dates.slice(index,index+7)}
+function formatDate(dateId){return dateObject(dateId).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}
+function isWeekend(dateId){return [0,6].includes(dateObject(dateId).getDay())}
+function shiftInfo(dateId,t){
+ if(t==='full')return {start:'08:00',end:'22:00',hours:14,pay:3000,label:'Полная смена №1'};
+ if(t==='late'&&isWeekend(dateId))return {start:'08:00',end:'22:00',hours:14,pay:3000,label:'Полная смена №2'};
+ if(t==='late')return {start:'15:00',end:'22:00',hours:7,pay:1500,label:'Вторая смена'};
+ return null;
+}
+function save(){try{localStorage.setItem('pvzOct2026',JSON.stringify(data))}catch(e){alert('Не удалось сохранить данные в браузере. Не закрывайте страницу.')}render()}
+function records(){const out=[];Object.entries(data).forEach(([k,v])=>{const m=k.match(/^(\d{4}-\d{2}-\d{2})_(full|late|hourly|repack)$/);if(!m)return;const dateId=m[1],t=m[2],fixed=shiftInfo(dateId,t);(Array.isArray(v)?v:[v]).forEach((r,i)=>out.push({...r,dateId,t,i,hours:fixed?fixed.hours:Number(r.hours),pay:fixed?fixed.pay:Number(r.pay)}))});return out.sort((a,b)=>a.dateId.localeCompare(b.dateId))}
+function totals(n){const rs=records().filter(r=>r.employee===n);return {full:rs.filter(r=>r.t==='full'||(r.t==='late'&&isWeekend(r.dateId))).length,late:rs.filter(r=>r.t==='late'&&!isWeekend(r.dateId)).length,hourly:num(rs.filter(r=>r.t==='hourly').reduce((a,r)=>a+r.hours,0)),repack:num(rs.filter(r=>r.t==='repack').reduce((a,r)=>a+r.hours,0)),hours:num(rs.reduce((a,r)=>a+r.hours,0)),pay:num(rs.reduce((a,r)=>a+r.pay,0)),count:rs.length}}
+function render(){
+ if(!session)return;
+ let html=`<thead><tr><th class="date">Дата</th><th>Смена №1</th><th>Смена №2<br><small>в выходные — полный день</small></th><th>Почасовые выходы</th><th>${owner()?'Переупаковка · 300 ₽/ч':'Переупаковка'}</th></tr></thead><tbody>`;
+ const dates=visibleDates();dates.forEach((o,index)=>{const {dateId,dt,inPeriod}=o,w=isWeekend(dateId)?'weekend':'',adjacent=inPeriod?'':'adjacent';if(index%7===0){const end=dates[Math.min(index+6,dates.length-1)];html+=`<tr class="week-row"><td colspan="5">Неделя: ${formatDate(dateId)} — ${formatDate(end.dateId)}</td></tr>`}html+=`<tr><td class="date ${w} ${adjacent}"><b>${formatDate(dateId)}</b><div class="dow">${dt.toLocaleDateString('ru-RU',{weekday:'long'})}</div>${inPeriod?'':'<span class="month-tag">соседний период</span>'}</td>`;
+ for(const t of ['full','late']){const r=data[key(dateId,t)],info=shiftInfo(dateId,t);html+=`<td class="cell ${w} ${adjacent}"><div class="shift ${r?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div><small>${info.label}</small>${r?`<b>${esc(r.employee)}</b>`:'<span class="status">Свободно</span>'}${r?`<button onclick="removeRecord('${dateId}','${t}',0)">Снять запись</button>`:`<button onclick="book('${dateId}','${t}')">Назначить выбранного сотрудника</button>`}</div></td>`}
+ for(const t of ['hourly','repack']){html+=`<td class="cell ${w} ${adjacent}">`;const rows=data[key(dateId,t)]||[];rows.forEach((r,i)=>{html+=`<div class="shift ${t==='repack'?'repack':'hourly'}"><b>${esc(r.employee)}</b><small>${esc(r.start)}–${esc(r.end)} · ${num(r.hours)} ч</small>${owner()?`<b>${money(r.pay)}</b>`:''}<button onclick="removeRecord('${dateId}','${t}',${i})">Удалить</button></div>`});if(!rows.length)html+='<span class="empty">Нет выходов</span>';html+=`<button class="primary" onclick="openHourly('${dateId}','${t}')">${t==='repack'?'+ Переупаковка':'+ Почасовой выход'}</button></td>`}html+='</tr>'});
+ document.getElementById('calendar').innerHTML=html+'</tbody>';
+ const stats=document.getElementById('stats');if(owner()){const a=totals(emp.value);stats.style.display='flex';stats.innerHTML=`<div class="stat">${esc(emp.value)}<br><b>${a.count} выходов · ${a.hours} ч</b></div><div class="stat">Начислено<br><b>${money(a.pay)}</b></div>`}else{stats.style.display='none';stats.innerHTML=''}
+ if(owner())renderAdmin();
+}
+function overlap(dateId,n,start,end,skip){return records().some(r=>{const info=shiftInfo(r.dateId,r.t);return r.dateId===dateId&&r.employee===n&&!(skip&&r.dateId===skip.dateId&&r.t===skip.t&&r.i===skip.i)&&start<(info?info.end:r.end)&&end>(info?info.start:r.start)})}
+function book(dateId,t){if(!allowed(emp.value)||data[key(dateId,t)])return;const info=shiftInfo(dateId,t);if(overlap(dateId,emp.value,info.start,info.end))return alert('У сотрудника уже есть работа в это время.');data[key(dateId,t)]={employee:emp.value};save()}
+function removeRecord(dateId,t,i){
+ const k=key(dateId,t),isList=Array.isArray(data[k]),r=isList?data[k][i]:data[k];if(!r||!allowed(r.employee))return;
+ lastRemoved={k,index:i,isList,value:{...r}};
+ if(isList){data[k].splice(i,1);if(!data[k].length)delete data[k]}else delete data[k];
+ save();showUndo(`Запись ${r.employee} на ${formatDate(dateId)} снята`);
+}
+function showUndo(message){const toast=document.getElementById('undoToast');document.getElementById('undoText').textContent=message;toast.classList.add('show');clearTimeout(undoTimer);undoTimer=setTimeout(()=>{toast.classList.remove('show');lastRemoved=null},7000)}
+function undoRemove(){
+ if(!lastRemoved)return;const x=lastRemoved;
+ if(x.isList){data[x.k]=data[x.k]||[];data[x.k].splice(Math.min(x.index,data[x.k].length),0,x.value)}
+ else if(!data[x.k])data[x.k]=x.value;
+ else return alert('Эту смену уже занял другой сотрудник.');
+ lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');save();
+}
+function openHourly(dateId='2026-10-01',workType='hourly'){if(!session)return;editing=null;document.getElementById('workDate').value=dateId;document.getElementById('workType').value=workType;modalEmp.value=workType==='repack'?'Ксения':emp.value;document.getElementById('modalDate').textContent='Период графика: 28 сентября 2026 — 3 января 2027';document.getElementById('modal').classList.add('show');updateCost()}
+function editRecord(dateId,t,i){if(!admin())return;const r=records().find(x=>x.dateId===dateId&&x.t===t&&x.i===i),info=shiftInfo(dateId,t);openHourly(dateId);editing={dateId,t,i};modalEmp.value=r.employee;document.getElementById('workType').value=t;document.getElementById('start').value=r.start||(info?info.start:'10:00');document.getElementById('end').value=r.end||(info?info.end:'14:00');updateCost()}
+function closeModal(){document.getElementById('modal').classList.remove('show');editing=null}
+function duration(){const a=document.getElementById('start').value,b=document.getElementById('end').value;const mins=x=>{const [h,m]=x.split(':').map(Number);return h*60+m};return (mins(b)-mins(a))/60}
+function updateCost(){const dateId=document.getElementById('workDate').value,t=document.getElementById('workType').value,info=dateId?shiftInfo(dateId,t):null,fixed=!!info;if(t==='repack'){modalEmp.value='Ксения';modalEmp.disabled=true}else modalEmp.disabled=false;document.getElementById('start').disabled=fixed;document.getElementById('end').disabled=fixed;const h=duration();document.getElementById('hourCost').textContent=fixed?(owner()?`${info.label}: ${info.hours} ч · ${money(info.pay)}`:`${info.label}: ${info.start}–${info.end}`):h>0?(owner()?num(h)+' ч · '+money(num(h*(t==='repack'?300:200))):num(h)+' ч'):'Проверьте время'}
+function saveHourly(){
+ const dateId=document.getElementById('workDate').value,t=document.getElementById('workType').value,n=modalEmp.value,k=key(dateId,t),fixed=['full','late'].includes(t);
+ if(!allowed(n))return;if(!/^\d{4}-\d{2}-\d{2}$/.test(dateId)||dateId<GRAPH_START||dateId>GRAPH_END)return alert('Выберите дату в периоде с 28 сентября 2026 по 3 января 2027.');if(t==='repack'&&n!=='Ксения')return alert('Переупаковка по 300 ₽/ч доступна Ксении.');
+ const info=shiftInfo(dateId,t),start=fixed?info.start:document.getElementById('start').value,end=fixed?info.end:document.getElementById('end').value,h=fixed?info.hours:duration();
+ if(!Number.isFinite(h)||h<=0)return alert('Окончание должно быть позже начала.');if(fixed&&data[k]&&!(editing&&editing.dateId===dateId&&editing.t===t))return alert('Эта смена уже занята.');if(overlap(dateId,n,start,end,editing))return alert('У сотрудника уже есть работа в это время.');
+ if(editing){const old=key(editing.dateId,editing.t);if(Array.isArray(data[old])){data[old].splice(editing.i,1);if(!data[old].length)delete data[old]}else delete data[old]}
+ const r={employee:n,start,end,hours:h,pay:num(h*(t==='repack'?300:200))};if(fixed)data[k]={employee:n};else{data[k]=data[k]||[];data[k].push(r)}save();closeModal();
+}
+function clearMine(){if(!allowed(emp.value)||!confirm('Удалить все записи выбранного сотрудника за весь показанный период?'))return;Object.keys(data).forEach(k=>{if(Array.isArray(data[k])){data[k]=data[k].filter(r=>r.employee!==emp.value);if(!data[k].length)delete data[k]}else if(data[k].employee===emp.value)delete data[k]});save()}
+function renderAdmin(){if(!owner())return;renderWeekly();let total=0;document.getElementById('adminSummary').innerHTML='<table class="report"><tr><th>Сотрудник</th><th>3 000 ₽, смен</th><th>1 500 ₽, смен</th><th>200 ₽/ч, часы</th><th>300 ₽/ч, часы</th><th>Всего часов</th><th>Начислено</th></tr>'+employees.map(n=>{const a=totals(n);total+=a.pay;return `<tr><td>${esc(n)}${n==='Злата'?'<small> · данные позже</small>':''}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td><b>${money(a.pay)}</b></td></tr>`}).join('')+`<tr><td colspan="6"><b>Общий фонд оплаты</b></td><td><b>${money(total)}</b></td></tr></table>`;
+ document.getElementById('adminRecords').innerHTML='<p>'+esc(emp.value)+'</p><table class="report"><tr><th>Дата</th><th>Работа</th><th>Часы</th><th>Сумма</th><th>Действия</th></tr>'+records().filter(r=>r.employee===emp.value).map(r=>`<tr><td>${formatDate(r.dateId)}</td><td>${shiftInfo(r.dateId,r.t)?.label||labels[r.t]}</td><td>${num(r.hours)}</td><td>${money(r.pay)}</td><td><button onclick="editRecord('${r.dateId}','${r.t}',${r.i})">Исправить</button> <button onclick="removeRecord('${r.dateId}','${r.t}',${r.i})">Удалить</button></td></tr>`).join('')+'</table>';
+}
+function weeklyRows(){
+ return weekDefinitions().flatMap(w=>employees.map(n=>({...w,n,pay:num(records().filter(r=>r.employee===n&&r.dateId>=w.from&&r.dateId<=w.to).reduce((a,r)=>a+r.pay,0)),k:w.id+'_'+n})));
+}
+function renderWeekly(){if(!owner())return;const selected=document.getElementById('paymentWeekFilter').value,rows=weeklyRows().filter(w=>selected==='all'||w.from===selected);document.getElementById('weeklyReport').innerHTML='<table class="report"><tr><th>Неделя</th><th>Дата выплаты</th><th>Сотрудник</th><th>Начислено</th><th>Статус</th></tr>'+rows.map(w=>{const paid=payments[w.k],encoded=encodeURIComponent(w.k);return `<tr><td>${w.period}</td><td>${w.date}</td><td>${esc(w.n)}</td><td>${money(w.pay)}</td><td>${paid?`Отмечено выплаченным: ${money(paid.amount)}${paid.amount!==w.pay?'<br><b>Начисление изменилось — проверьте разницу</b>':''}<br><button onclick="markPaid('${encoded}',false)">Снять отметку</button>`:`<button onclick="markPaid('${encoded}',true)">Отметить выплату</button>`}</td></tr>`}).join('')+'</table>'}
+function markPaid(encodedKey,value){if(!owner())return;const keyValue=decodeURIComponent(encodedKey),w=weeklyRows().find(x=>x.k===keyValue);if(!w)return;if(value&&!confirm('Подтвердить, что '+w.n+' получил(а) '+money(w.pay)+' за '+w.period+'?'))return;if(!value&&!confirm('Снять отметку выплаты?'))return;const next={...payments};if(value)next[w.k]={amount:w.pay,markedAt:new Date().toISOString()};else delete next[w.k];try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(next));payments=next;renderWeekly()}catch(e){alert('Не удалось сохранить отметку выплаты.')}}
+function showAdmin(){if(!owner())return;renderAdmin();document.getElementById('adminPanel').style.display='block';document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'})}
+function exportReport(){if(!owner())return;const rows=[['Сотрудник','Смены 3000','Смены 1500','Часы 200','Часы 300','Всего часов','Начислено'],...employees.map(n=>{const a=totals(n);return [n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay]})];const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='Зарплата_до_конца_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function sha256(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('')}
+async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,h=await sha256(p),ok=(role==='admin'&&h===ADMIN_PASSWORD_HASH)||(role==='owner'&&h===OWNER_PASSWORD_HASH);if(!ok){document.getElementById('loginError').textContent='Неверный пароль';return}session={role,name:role==='owner'?'Владелец':'Администратор'};emp.value=employees[0];emp.disabled=false;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
+function logout(){session=null;lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML=''}
+for(const id of ['employee','modalEmployee'])employees.forEach(n=>document.getElementById(id).add(new Option(n,n)));
+weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from));document.getElementById('paymentWeekFilter').add(new Option(w.period,w.from))});
+emp.onchange=render;document.getElementById('weekFilter').onchange=render;document.getElementById('paymentWeekFilter').onchange=renderWeekly;for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
+document.getElementById('loginPass').onkeydown=e=>{if(e.key==='Enter')login()};
+</script></body></html>
