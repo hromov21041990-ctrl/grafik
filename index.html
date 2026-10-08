@@ -55,7 +55,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   </div>
 
   <div class="card controls">
-    <label>Назначить сотрудника:
+    <label>Сотрудник для просмотра и очистки:
       <select id="employee"></select>
     </label>
     <label>Неделя:
@@ -157,14 +157,13 @@ function render(){
  if(!session)return;
  let html=`<thead><tr><th class="date">Дата</th><th>Смена №1</th><th>Смена №2<br><small>в выходные — полный день</small></th><th>Почасовые выходы</th><th>${owner()?'Переупаковка · 300 ₽/ч':'Переупаковка'}</th></tr></thead><tbody>`;
  const dates=visibleDates();dates.forEach((o,index)=>{const {dateId,dt,inPeriod}=o,w=isWeekend(dateId)?'weekend':'',adjacent=inPeriod?'':'adjacent';if(index%7===0){const end=dates[Math.min(index+6,dates.length-1)];html+=`<tr class="week-row"><td colspan="5">Неделя: ${formatDate(dateId)} — ${formatDate(end.dateId)}</td></tr>`}html+=`<tr><td class="date ${w} ${adjacent}"><b>${formatDate(dateId)}</b><div class="dow">${dt.toLocaleDateString('ru-RU',{weekday:'long'})}</div>${inPeriod?'':'<span class="month-tag">соседний период</span>'}</td>`;
- for(const t of ['full','late']){const r=data[key(dateId,t)],info=shiftInfo(dateId,t);html+=`<td class="cell ${w} ${adjacent}"><div class="shift ${r?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div><small>${info.label}</small>${r?`<b>${esc(r.employee)}</b>`:'<span class="status">Свободно</span>'}${r?`<button onclick="removeRecord('${dateId}','${t}',0)">Снять запись</button>`:`<button onclick="book('${dateId}','${t}')">Назначить выбранного сотрудника</button>`}</div></td>`}
+ for(const t of ['full','late']){const r=data[key(dateId,t)],info=shiftInfo(dateId,t);html+=`<td class="cell ${w} ${adjacent}"><div class="shift ${r?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div><small>${info.label}</small>${r?`<b>${esc(r.employee)}</b>`:'<span class="status">Свободно</span>'}${r?`<button onclick="removeRecord('${dateId}','${t}',0)">Снять запись</button>`:`<button onclick="openHourly('${dateId}','${t}')">Назначить сотрудника</button>`}</div></td>`}
  for(const t of ['hourly','repack']){html+=`<td class="cell ${w} ${adjacent}">`;const rows=data[key(dateId,t)]||[];rows.forEach((r,i)=>{html+=`<div class="shift ${t==='repack'?'repack':'hourly'}"><b>${esc(r.employee)}</b><small>${esc(r.start)}–${esc(r.end)} · ${num(r.hours)} ч</small>${owner()?`<b>${money(r.pay)}</b>`:''}<button onclick="removeRecord('${dateId}','${t}',${i})">Удалить</button></div>`});if(!rows.length)html+='<span class="empty">Нет выходов</span>';html+=`<button class="primary" onclick="openHourly('${dateId}','${t}')">${t==='repack'?'+ Переупаковка':'+ Почасовой выход'}</button></td>`}html+='</tr>'});
  document.getElementById('calendar').innerHTML=html+'</tbody>';
  const stats=document.getElementById('stats');if(owner()){const a=totals(emp.value);stats.style.display='flex';stats.innerHTML=`<div class="stat">${esc(emp.value)}<br><b>${a.count} выходов · ${a.hours} ч</b></div><div class="stat">Начислено<br><b>${money(a.pay)}</b></div>`}else{stats.style.display='none';stats.innerHTML=''}
  if(owner())renderAdmin();
 }
 function overlap(dateId,n,start,end,skip){return records().some(r=>{const info=shiftInfo(r.dateId,r.t);return r.dateId===dateId&&r.employee===n&&!(skip&&r.dateId===skip.dateId&&r.t===skip.t&&r.i===skip.i)&&start<(info?info.end:r.end)&&end>(info?info.start:r.start)})}
-function book(dateId,t){if(!allowed(emp.value)||data[key(dateId,t)])return;const info=shiftInfo(dateId,t);if(overlap(dateId,emp.value,info.start,info.end))return alert('У сотрудника уже есть работа в это время.');data[key(dateId,t)]={employee:emp.value};save()}
 function removeRecord(dateId,t,i){
  const k=key(dateId,t),isList=Array.isArray(data[k]),r=isList?data[k][i]:data[k];if(!r||!allowed(r.employee))return;
  lastRemoved={k,index:i,isList,value:{...r}};
