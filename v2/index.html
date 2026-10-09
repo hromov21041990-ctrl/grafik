@@ -126,7 +126,7 @@ h3{font-size:17px}
 @media(max-width:1050px){.auth-layout{grid-template-columns:1fr}.auth-story{position:static;padding:8px 0 0}.auth-story h1{font-size:38px}.benefits{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;gap:10px}.benefit{align-items:flex-start}.benefit-icon{display:none}.auth-card{max-width:760px;width:100%}}
 @media(max-width:700px){.page{padding:0 14px 34px}.topbar{height:76px}.brandname{font-size:19px}.brandmark{width:38px;height:38px}.topbadge{font-size:10px;padding:6px 9px}.auth-layout{gap:10px;padding-top:19px}.auth-story h1{font-size:30px;letter-spacing:-1px}.auth-story>p{font-size:14px}.benefits{display:none}.auth-card,.card{padding:18px}.grid-form{grid-template-columns:1fr 1fr;gap:12px}.hero{align-items:flex-start;flex-direction:column}.hero h1{font-size:27px}.metrics{gap:8px}.metric{padding:13px;min-height:104px}.metric strong{font-size:20px}.metric .metric-label{font-size:11px}.metric small{font-size:10px}.weektable{min-width:650px}.weektable th:first-child{width:116px}.weektable th,.weektable td{padding:9px}.weektable .daycell{padding:13px 8px}.slot{padding:9px}.slotbtn{padding:9px}.week-nav{width:100%}.work-card .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.metrics{grid-template-columns:1fr 1fr}.metrics .metric:last-child{grid-column:span 2}.auth-card .grid-form{grid-template-columns:1fr}.auth-card .formfield.wide{grid-column:1}.week-nav input{width:145px}.topbadge{display:none}}
-.pass-wrap{display:flex;gap:6px;align-items:stretch}.pass-wrap input{flex:1;min-width:0}.pass-wrap button{flex:0 0 43px;padding:8px;background:#f7f6ff;color:#5547ad}.recovery-panel{background:#f3f0ff;border:1px solid #d8d0fc;border-radius:12px;padding:15px;margin:16px 0;overflow-wrap:anywhere}.recovery-code{font:700 15px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:all;letter-spacing:.6px}.text-link{border:0;background:none!important;color:#6754d7!important;text-decoration:underline;padding:8px 0}.security-box{border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.security-message{color:#2e735c;font-size:13px;font-weight:650;overflow-wrap:anywhere}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
+.pass-wrap{display:flex;gap:6px;align-items:stretch}.pass-wrap input{flex:1;min-width:0}.pass-wrap button{flex:0 0 43px;padding:8px;background:#f7f6ff;color:#5547ad}.recovery-panel{background:#f3f0ff;border:1px solid #d8d0fc;border-radius:12px;padding:15px;margin:16px 0;overflow-wrap:anywhere}.recovery-code{font:700 15px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:all;letter-spacing:.6px}.text-link{border:0;background:none!important;color:#6754d7!important;text-decoration:underline;padding:8px 0}.security-box{border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.security-message{color:#2e735c;font-size:13px;font-weight:650;overflow-wrap:anywhere}</style><link rel="stylesheet" href="./mobile.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="page">
  <header class="topbar" aria-label="По графику">
@@ -193,7 +193,7 @@ h3{font-size:17px}
    </div>
   </div>
   <div id="metrics" class="metrics" aria-label="Сводка по выбранной неделе"></div>
-  <section class="card">
+  <section class="card" id="calendarSection">
    <div class="card-header">
     <div><h2>График смен</h2><p>Выбирайте свободное место для назначения сотрудника</p></div>
     <div class="week-nav">
@@ -244,6 +244,7 @@ h3{font-size:17px}
    <p id="securityStatus" class="security-message" role="status"></p><div id="ownerRecoveryResult" class="recovery-panel hide"></div>
    </div>
   </section>
+  <nav id="mobileNav" class="mobile-nav hide" aria-label="Разделы"><button onclick="mobileJump('calendarSection')"><span class="nav-icon">▦</span>График</button><button onclick="mobileJump('paySection')"><span class="nav-icon">₽</span>Выплаты</button><button onclick="mobileJump('owner')"><span class="nav-icon">⚙</span>Настройки</button></nav>
   <footer class="foot">По графику · Смены, сотрудники и выплаты в одном месте</footer>
  </main>
 </div><script>
@@ -261,6 +262,7 @@ function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule
 function moveWeek(n){E('week').value=add(monday(E('week').value||iso(new Date())),7*n);draw()}
 function currentWeek(){E('week').value=monday(iso(new Date()));draw()}
 function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el.classList.contains('hide')){fill();el.scrollIntoView({behavior:'smooth',block:'start'})}}
+function mobileJump(id){if(id==='owner'&&E('owner').classList.contains('hide'))toggleSettings();else if(E(id)&&!E(id).classList.contains('hide'))E(id).scrollIntoView({behavior:'smooth',block:'start'})}
 function chooseShift(date,position){E('assignment').classList.remove('hide');E('date').value=date;E('position').value=String(position);E('assignment').scrollIntoView({behavior:'smooth',block:'nearest'})}
 function draw(){
  if(!s)return;
@@ -276,6 +278,7 @@ function draw(){
  E('period').textContent=fmt(from)+' — '+fmt(to)+' · '+assigned.length+' назначений';
  E('settingsBtn').classList.toggle('hide',s.role!=='owner');
  E('paySection').classList.toggle('hide',s.role!=='owner');
+ E('mobileNav').classList.toggle('hide',s.role!=='owner');
  if(s.role!=='owner')E('owner').classList.add('hide');
  const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
@@ -294,10 +297,10 @@ function draw(){
   return '<tr class="'+(!open?'offrow ':weekend?'weekend ':'')+(d===today?'todayrow':'')+'">'+
    '<td class="daycell"><strong>'+['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][x.dow]+'</strong><small>'+fmt(d)+(d===today?' · сегодня':'')+'</small></td>'+
    Array.from({length:s.config.positions},(_,p)=>{
-    if(!open)return '<td>Выходной</td>';
+    if(!open)return '<td data-slot="Смена №'+(p+1)+'">Выходной</td>';
     const r=all.find(v=>v.date===d&&v.position===p);
-    if(!r)return '<td><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
-    return '<td><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+
+    if(!r)return '<td data-slot="Смена №'+(p+1)+'"><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
+    return '<td data-slot="Смена №'+(p+1)+'"><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+
       '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+'</div>'+
       (s.role==='owner'?'<span class="shift-pay">'+rub(r.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
       '</div></td>';
