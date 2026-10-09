@@ -1,8 +1,248 @@
-<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>График смен 2.0</title><style>*{box-sizing:border-box}body{font:15px system-ui;background:#f6f7fa;color:#222;margin:0}main{max-width:1100px;margin:auto;padding:16px}section,.day{background:white;border:1px solid #e3e3ec;border-radius:14px;padding:18px;margin:12px 0}input,select,textarea,button{font:inherit;padding:10px;border:1px solid #d4d4df;border-radius:9px;max-width:100%}input,select,textarea{width:100%}label{display:block;margin:10px 0 5px;color:#555}button{cursor:pointer}button.primary{background:#6656ec;color:white;border-color:#6656ec}.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:135px}.hide{display:none!important}.calendar{display:block;overflow-x:auto;background:#fff;border:1px solid #e3e3ec;border-radius:14px}.weektable{border-collapse:separate;border-spacing:0;min-width:830px;width:100%}.weektable th{background:#f4f4f9;position:sticky;top:0;text-align:left}.weektable th,.weektable td{border-right:1px solid #e3e3ec;border-bottom:1px solid #e3e3ec;padding:12px;vertical-align:top}.weektable th:first-child,.weektable td:first-child{position:sticky;left:0;background:#fff;min-width:135px;z-index:1}.weektable th{z-index:2}.weektable th:first-child{z-index:3}.weektable .weekend td:first-child{background:#fff3f3}.weektable .offrow td{background:#f2f2f4}.week-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.week-nav input{width:auto}.slotbtn{width:100%;text-align:left;background:#e9f7ed;border:1px solid #c5e7cf}.slot .slotbtn{font-size:13px}.day{margin:0;padding:10px;min-width:0}.slot{background:#f4f4fa;padding:8px;border-radius:8px;margin:8px 0;font-size:12px}.busy{background:#e7f7ec}.off{background:#eee}.muted{color:#777}.error{color:#b22}table{border-collapse:collapse;width:100%}td,th{padding:9px;border-bottom:1px solid #eee;text-align:left}@media(max-width:700px){.weektable{min-width:660px}.weektable th,.weektable td{padding:8px}.slot{padding:6px}}</style><main><h1>График смен 2.0 <small class="muted">Бета</small></h1><p class="muted">Для ПВЗ, магазинов и небольших торговых точек</p><section id="auth"><button onclick="mode(false)">Создать точку</button> <button onclick="mode(true)">Войти</button><div id="reg"><h2>Регистрация точки</h2><div class="row"><div><label>Название точки</label><input id="name" placeholder="Мой магазин"></div><div><label>Код точки латиницей</label><input id="code" placeholder="my-shop"></div></div><div class="row"><div><label>Пароль владельца (10+ символов)</label><input id="ownerPass" type="password"></div><div><label>Пароль сотрудника (10+ символов)</label><input id="staffPass" type="password"></div></div><div class="row"><div><label>Количество сотрудников</label><input id="count" type="number" min="1" max="50" value="6" onchange="namesFill()"></div><div><label>Человек в смене</label><input id="positions" type="number" min="1" max="10" value="2"></div><div><label>Открытие</label><input id="opens" type="time" value="10:00"></div><div><label>Закрытие</label><input id="closes" type="time" value="22:00"></div></div><label>Имена сотрудников (каждый с новой строки)</label><textarea id="names" rows="5"></textarea><label>Рабочие дни</label><div id="days"></div><div class="row"><div><label>Ставка за смену, ₽</label><input id="shift" type="number" value="3000"></div><div><label>Ставка за час, ₽</label><input id="hour" type="number" value="200"></div></div><p><button class="primary" onclick="register()">Создать точку</button></p></div><div id="signin" class="hide"><h2>Вход</h2><label>Код точки</label><input id="signinCode"><label>Роль</label><select id="role"><option value="owner">Владелец</option><option value="staff">Сотрудник</option></select><label>Пароль</label><input id="pass" type="password"><p><button class="primary" onclick="login()">Войти</button></p></div><p id="error" class="error"></p></section><div id="app" class="hide"><section><button style="float:right" onclick="logout()">Выйти</button><h2 id="company"></h2><p id="summary" class="muted"></p><div class="week-nav"><button onclick="moveWeek(-1)">←</button><label for="week">Неделя</label><input id="week" type="date" onchange="draw()"><button onclick="moveWeek(1)">→</button><button onclick="currentWeek()">Текущая неделя</button><button id="settingsBtn" class="hide" onclick="toggleSettings()">⚙ Настройки точки</button></div><p id="status"></p></section><div class="calendar" id="calendar"></div><section id="assignment" class="hide"><h2>Назначить сотрудника</h2><div class="row"><div><label>Дата</label><input id="date" type="date"></div><div><label>Место</label><select id="position"></select></div><div><label>Сотрудник</label><select id="employee"></select></div><div><label>Оплата</label><select id="kind"><option value="shift">За смену</option><option value="hour">Почасовая</option></select></div><div><label>С</label><input id="start" type="time"></div><div><label>До</label><input id="end" type="time"></div></div><p><button class="primary" onclick="assign()">Назначить</button></p></section><section id="owner" class="hide"><h2>Настройки точки</h2><div class="row"><div><label>Название</label><input id="editName"></div><div><label>Человек в смене</label><input id="editPositions" type="number" min="1" max="10"></div><div><label>Открытие</label><input id="editOpens" type="time"></div><div><label>Закрытие</label><input id="editCloses" type="time"></div><div><label>Ставка за смену</label><input id="editShift" type="number"></div><div><label>Ставка за час</label><input id="editHour" type="number"></div></div><label>Рабочие дни</label><div id="editDays"></div><label>Сотрудники — можно добавлять и удалять</label><textarea id="editNames" rows="5"></textarea><p><button class="primary" onclick="settings()">Сохранить настройки</button></p></section><section id="paySection" class="hide"><h2>Еженедельные выплаты</h2><div id="pay"></div></section></div></main><script>
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f6fb"><meta name="description" content="По графику — сервис управления сменами и выплатами для владельцев небольших команд">
+<title>По графику — смены и выплаты · Бета 2.0</title><style>
+:root{--bg:#f5f6fb;--surface:#fff;--ink:#202339;--muted:#71778a;--line:#e7e9f2;--brand:#6954e8;--brand-dark:#5140c8;--brand-soft:#f0edff;--good:#169d70;--good-bg:#eaf9f2;--danger:#c75b5b;--shadow:0 12px 40px rgba(28,31,71,.055);color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);padding:11px 15px;cursor:pointer;transition:background .15s,transform .12s,border-color .15s;font-weight:650}
+button:hover{border-color:#c7c1ee;background:#f8f6ff}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--brand);border-color:var(--brand);color:white;box-shadow:0 5px 12px rgba(105,84,232,.15)}
+button.primary:hover{background:var(--brand-dark)}
+button.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+button.small{font-size:13px;padding:7px 10px;border-radius:9px}
+a{color:var(--brand)}
+input,select,textarea{display:block;width:100%;min-width:0;padding:11px 12px;background:white;border:1px solid #dfe2ed;border-radius:11px;color:var(--ink);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(105,84,232,.11)}
+label{display:block;font-size:12px;font-weight:650;color:#6b7083;margin-bottom:6px}
+textarea{resize:vertical}
+h1,h2,h3,p{margin-top:0}
+h1{font-size:32px;letter-spacing:-.9px;line-height:1.16}
+h2{font-size:21px;letter-spacing:-.45px;line-height:1.3}
+h3{font-size:17px}
+.muted{color:var(--muted)}
+.hide{display:none!important}
+.page{max-width:1340px;margin:auto;padding:0 28px 50px}
+.topbar{height:88px;display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:13px}
+.brandmark{width:42px;height:42px;background:var(--brand);border-radius:13px;color:white;display:grid;place-items:center;box-shadow:0 7px 16px rgba(105,84,232,.18);font-size:19px;font-weight:900;letter-spacing:-1px}
+.brandname{font-size:21px;font-weight:850;letter-spacing:-.7px;line-height:1.05}
+.brandhint{display:block;font-size:11px;letter-spacing:0;font-weight:500;color:var(--muted);padding-top:5px}
+.topbadge{display:inline-flex;align-items:center;gap:7px;border:1px solid #e2defb;border-radius:30px;background:#f8f6ff;color:#6654ba;padding:7px 13px;font-size:12px;font-weight:700;white-space:nowrap}
+.topbadge:before{content:"";width:7px;height:7px;background:#8e7df1;border-radius:50%}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:24px}
+.auth-layout{display:grid;grid-template-columns:minmax(260px, .86fr) minmax(420px, 1.14fr);gap:28px;padding-top:32px;align-items:start}
+.auth-story{padding:42px 18px 18px 3px;position:sticky;top:15px}
+.kicker{font-size:11px;font-weight:800;letter-spacing:1.35px;text-transform:uppercase;color:var(--brand);margin:0 0 14px}
+.auth-story h1{font-size:46px;letter-spacing:-1.75px;line-height:1.12;margin-bottom:19px;max-width:500px}
+.auth-story h1 em{color:var(--brand);font-style:normal}
+.auth-story>p{font-size:16px;max-width:420px;line-height:1.65}
+.benefits{display:grid;gap:16px;margin-top:32px;max-width:410px}
+.benefit{display:flex;gap:13px;align-items:flex-start}
+.benefit-icon{width:35px;height:35px;flex:0 0 35px;border-radius:11px;background:var(--brand-soft);display:grid;place-items:center;color:var(--brand);font-size:17px}
+.benefit b{display:block;font-size:14px;margin-bottom:2px}
+.benefit small{font-size:12px;color:var(--muted);line-height:1.5}
+.auth-card{padding:27px 28px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f3f4f9;padding:5px;border-radius:12px;margin-bottom:25px}
+.auth-tabs button{border:0;background:transparent;box-shadow:none;padding:11px}
+.auth-tabs button.is-active{background:#fff;color:var(--brand);box-shadow:0 2px 9px rgba(40,38,99,.09)}
+.formtitle{margin:0 0 5px}
+.formnote{color:var(--muted);font-size:13px;margin-bottom:22px}
+.grid-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.formfield{min-width:0}
+.formfield.wide{grid-column:1/-1}
+.formgroup{padding-top:15px;margin-top:18px;border-top:1px solid var(--line)}
+.formgroup h3{margin:0 0 14px}
+.day-checks{display:flex;flex-wrap:wrap;gap:7px}
+.day-checks label{margin:0!important;display:flex!important;align-items:center;gap:5px;background:#f7f8fc;border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--ink);font-size:13px;cursor:pointer}
+.day-checks input{width:15px;height:15px;padding:0;min-width:15px;margin:0;accent-color:var(--brand);box-shadow:none}
+.buttonwide{width:100%;margin-top:22px}
+.error{color:var(--danger);font-weight:650;font-size:13px;min-height:18px}
+.dashboard{padding-top:28px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:23px}
+.hero h1{margin:0 0 7px}
+.hero .subtitle{margin:0;color:var(--muted);font-size:14px}
+.hero-actions{display:flex;gap:9px;flex-wrap:wrap}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.metric{background:var(--surface);padding:20px 22px;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);min-height:123px}
+.metric .metric-label{font-size:13px;color:var(--muted);font-weight:650}
+.metric strong{display:block;font-size:28px;font-weight:850;letter-spacing:-1px;line-height:1.2;margin:10px 0 3px}
+.metric small{color:var(--muted);font-size:12px}
+.metric.featured{background:var(--brand);color:white;border-color:var(--brand);position:relative;overflow:hidden}
+.metric.featured:after{content:"";position:absolute;right:-26px;top:-36px;width:145px;height:145px;border-radius:50%;border:27px solid rgba(255,255,255,.08)}
+.metric.featured .metric-label,.metric.featured small{color:rgba(255,255,255,.8)}
+.card-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+.card-header h2{margin:0}
+.card-header p{font-size:13px;color:var(--muted);margin:4px 0 0}
+.week-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.week-nav label{margin:0}
+.week-nav input{width:156px;padding:9px;font-size:13px}
+.week-nav button{font-size:13px;padding:9px 13px}
+.week-range{font-size:13px;color:var(--muted);padding:9px 13px;background:#f7f7fb;border-radius:9px;display:inline-block;margin-bottom:14px}
+#status{font-size:13px;font-weight:650;color:var(--good);min-height:0;margin:10px 0 0}
+.calendar{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:13px;background:white}
+.weektable{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:750px}
+.weektable th{background:#f7f8fc;text-align:left;color:#777e90;font-size:12px;font-weight:800;letter-spacing:.3px;padding:15px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.weektable th:first-child{width:172px}
+.weektable td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:11px;vertical-align:top;height:107px}
+.weektable td:last-child,.weektable th:last-child{border-right:0}
+.weektable tr:last-child td{border-bottom:0}
+.weektable .daycell{background:#fff;padding:17px 13px}
+.daycell strong{font-size:14px;display:block}
+.daycell small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.weektable .weekend .daycell{background:#fffbf7}
+.weektable .todayrow .daycell{box-shadow:inset 4px 0 0 var(--brand)}
+.weektable .todayrow .daycell small{color:var(--brand);font-weight:800}
+.weektable .offrow td{background:#f7f8fa;color:#afb3c1}
+.weektable .offrow .daycell{background:#f4f5f9}
+.slot{padding:12px 14px;border-radius:11px;min-height:79px;font-size:13px}
+.slot.busy{background:var(--brand-soft);border:1px solid #e0dbff}
+.slot .person{font-weight:800;display:block;color:#382d8d;overflow-wrap:anywhere}
+.slot .shift-time{font-size:12px;color:#7066a1;margin:5px 0}
+.slot .shift-pay{font-weight:800;font-size:13px}
+.slot .remove-btn{display:inline-block;background:transparent;border:0;border-bottom:1px dashed #9387c4;border-radius:0;padding:1px 0;margin-top:7px;font-size:11px;font-weight:500;color:#7066a1}
+.slotbtn{width:100%;height:100%;min-height:80px;background:var(--good-bg);border:1px dashed #8bdfc3;text-align:left;padding:12px 14px;font-size:13px;color:#136f55}
+.slotbtn:hover{background:#ddf7eb;border-color:#57cba4}
+.slotbtn small{display:block;margin-top:6px;color:#168963;font-size:12px;font-weight:750}
+.table-hint{display:flex;gap:17px;flex-wrap:wrap;margin:15px 0 0;color:var(--muted);font-size:12px}
+.legenddot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--good-bg);border:1px solid #8bdfc3}
+.legenddot.busy-dot{background:var(--brand-soft);border-color:#b8aefb}
+.legenddot.off-dot{background:#eee;border-color:#ddd}
+.work-card{margin-top:18px}
+.work-card .grid-form{grid-template-columns:repeat(3,minmax(0,1fr))}
+.work-actions{display:flex;gap:10px;margin-top:19px}
+.pay-card,.settings-card{margin-top:18px}
+.table-scroll{overflow-x:auto}
+.paytable{width:100%;border-collapse:collapse;min-width:500px}
+.paytable th{text-align:left;color:var(--muted);font-size:12px;background:#f7f8fc}
+.paytable td,.paytable th{padding:13px;border-bottom:1px solid var(--line)}
+.paytable tr:last-child td{border-bottom:0}
+.paytable .sum{font-weight:800}
+.paidstatus{color:var(--good);font-weight:750}
+.foot{font-size:12px;text-align:center;color:#a0a3b0;padding:30px 0 0}
+@media(max-width:1050px){.auth-layout{grid-template-columns:1fr}.auth-story{position:static;padding:8px 0 0}.auth-story h1{font-size:38px}.benefits{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;gap:10px}.benefit{align-items:flex-start}.benefit-icon{display:none}.auth-card{max-width:760px;width:100%}}
+@media(max-width:700px){.page{padding:0 14px 34px}.topbar{height:76px}.brandname{font-size:19px}.brandmark{width:38px;height:38px}.topbadge{font-size:10px;padding:6px 9px}.auth-layout{gap:10px;padding-top:19px}.auth-story h1{font-size:30px;letter-spacing:-1px}.auth-story>p{font-size:14px}.benefits{display:none}.auth-card,.card{padding:18px}.grid-form{grid-template-columns:1fr 1fr;gap:12px}.hero{align-items:flex-start;flex-direction:column}.hero h1{font-size:27px}.metrics{gap:8px}.metric{padding:13px;min-height:104px}.metric strong{font-size:20px}.metric .metric-label{font-size:11px}.metric small{font-size:10px}.weektable{min-width:650px}.weektable th:first-child{width:116px}.weektable th,.weektable td{padding:9px}.weektable .daycell{padding:13px 8px}.slot{padding:9px}.slotbtn{padding:9px}.week-nav{width:100%}.work-card .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.metrics{grid-template-columns:1fr 1fr}.metrics .metric:last-child{grid-column:span 2}.auth-card .grid-form{grid-template-columns:1fr}.auth-card .formfield.wide{grid-column:1}.week-nav input{width:145px}.topbadge{display:none}}
+</style></head>
+<body>
+<div class="page">
+ <header class="topbar" aria-label="По графику">
+  <div class="brand"><div class="brandmark" aria-hidden="true">ПГ</div><div><div class="brandname">По графику</div><span class="brandhint">Сервис учёта смен и выплат</span></div></div>
+  <span class="topbadge">Версия 2.0 · Бета</span>
+ </header>
+ <div id="auth" class="auth-layout">
+  <div class="auth-story">
+   <div class="kicker">Для владельцев небольших команд</div>
+   <h1>Смены под контролем.<br><em>Выплаты без путаницы.</em></h1>
+   <p class="muted">Создайте график работы, назначайте сотрудников и контролируйте начисления — в одном удобном сервисе.</p>
+   <div class="benefits">
+    <div class="benefit"><div class="benefit-icon">▦</div><div><b>Понятный график</b><small>Видно, кто работает, а где свободные места</small></div></div>
+    <div class="benefit"><div class="benefit-icon">₽</div><div><b>Ставки и выплаты</b><small>Оплата за смену или отработанные часы</small></div></div>
+    <div class="benefit"><div class="benefit-icon">⌘</div><div><b>Несколько точек</b><small>У каждой компании собственные данные и настройки</small></div></div>
+   </div>
+  </div>
+  <section class="card auth-card" aria-label="Вход и регистрация">
+   <div class="auth-tabs"><button id="regTab" class="is-active" onclick="mode(false)">Создать точку</button><button id="signinTab" onclick="mode(true)">Войти</button></div>
+   <div id="reg">
+    <h2 class="formtitle">Настройте свою точку</h2><p class="formnote">Достаточно нескольких параметров, чтобы начать пользоваться графиком.</p>
+    <div class="grid-form">
+     <div class="formfield"><label for="name">Название компании или точки</label><input id="name" placeholder="Например, Магазин на Ленина" autocomplete="organization"></div>
+     <div class="formfield"><label for="code">Код для входа (латиницей)</label><input id="code" placeholder="my-shop" autocapitalize="none" autocomplete="off"></div>
+     <div class="formfield"><label for="ownerPass">Пароль владельца (10+ знаков)</label><input id="ownerPass" type="password" autocomplete="new-password"></div>
+     <div class="formfield"><label for="staffPass">Пароль сотрудника (10+ знаков)</label><input id="staffPass" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="formgroup"><h3>Команда и график</h3>
+     <div class="grid-form">
+      <div class="formfield"><label for="count">Сотрудников в команде</label><input id="count" type="number" min="1" max="50" value="6" onchange="namesFill()"></div>
+      <div class="formfield"><label for="positions">Мест в смене</label><input id="positions" type="number" min="1" max="10" value="2"></div>
+      <div class="formfield"><label for="opens">Начало работы</label><input id="opens" type="time" value="10:00"></div>
+      <div class="formfield"><label for="closes">Окончание работы</label><input id="closes" type="time" value="22:00"></div>
+      <div class="formfield wide"><label for="names">Сотрудники — каждое имя с новой строки</label><textarea id="names" rows="4"></textarea></div>
+      <div class="formfield wide"><label>Рабочие дни</label><div id="days" class="day-checks"></div></div>
+     </div>
+    </div>
+    <div class="formgroup"><h3>Оплата труда</h3><div class="grid-form">
+     <div class="formfield"><label for="shift">Ставка за смену, ₽</label><input id="shift" type="number" min="1" value="3000"></div>
+     <div class="formfield"><label for="hour">Ставка за час, ₽</label><input id="hour" type="number" min="1" value="200"></div>
+    </div></div>
+    <button class="primary buttonwide" onclick="register()">Создать точку и открыть график →</button>
+   </div>
+   <div id="signin" class="hide">
+    <h2 class="formtitle">С возвращением!</h2><p class="formnote">Войдите, чтобы управлять сменами и выплатами.</p>
+    <div class="grid-form">
+     <div class="formfield wide"><label for="signinCode">Код вашей точки</label><input id="signinCode" placeholder="my-shop" autocapitalize="none" autocomplete="username"></div>
+     <div class="formfield wide"><label for="role">Роль</label><select id="role"><option value="owner">Владелец</option><option value="staff">Сотрудник</option></select></div>
+     <div class="formfield wide"><label for="pass">Пароль</label><input id="pass" type="password" autocomplete="current-password"></div>
+    </div>
+    <button class="primary buttonwide" onclick="login()">Войти в график →</button>
+   </div>
+   <p id="error" class="error" role="alert"></p>
+  </section>
+ </div>
+ <main id="app" class="dashboard hide">
+  <div class="hero">
+   <div><p class="kicker">Рабочая панель · По графику</p><h1 id="company"></h1><p id="summary" class="subtitle"></p></div>
+   <div class="hero-actions">
+    <button id="settingsBtn" class="hide" onclick="toggleSettings()">⚙ Настройки точки</button>
+    <button class="ghost" onclick="logout()">Выйти ↗</button>
+   </div>
+  </div>
+  <div id="metrics" class="metrics" aria-label="Сводка по выбранной неделе"></div>
+  <section class="card">
+   <div class="card-header">
+    <div><h2>График смен</h2><p>Выбирайте свободное место для назначения сотрудника</p></div>
+    <div class="week-nav">
+     <button aria-label="Предыдущая неделя" onclick="moveWeek(-1)">←</button>
+     <label for="week">Неделя</label><input id="week" type="date" onchange="draw()">
+     <button aria-label="Следующая неделя" onclick="moveWeek(1)">→</button>
+     <button onclick="currentWeek()">Сегодня</button>
+    </div>
+   </div>
+   <div id="period" class="week-range"></div>
+   <div id="calendar" class="calendar" aria-label="Календарь смен"></div>
+   <div class="table-hint"><span><i class="legenddot"></i>Свободно</span><span><i class="legenddot busy-dot"></i>Назначено</span><span><i class="legenddot off-dot"></i>Выходной</span></div>
+   <p id="status" role="status"></p>
+  </section>
+  <section id="assignment" class="card work-card hide">
+   <div class="card-header"><div><h2>Назначить сотрудника</h2><p>Выберите сотрудника, ставку и часы работы</p></div><button onclick="document.getElementById('assignment').classList.add('hide')">Закрыть ×</button></div>
+   <div class="grid-form">
+    <div class="formfield"><label for="date">Дата</label><input id="date" type="date"></div>
+    <div class="formfield"><label for="position">Место</label><select id="position"></select></div>
+    <div class="formfield"><label for="employee">Сотрудник</label><select id="employee"></select></div>
+    <div class="formfield"><label for="kind">Расчёт оплаты</label><select id="kind"><option value="shift">За смену</option><option value="hour">Почасовая ставка</option></select></div>
+    <div class="formfield"><label for="start">Начало</label><input id="start" type="time"></div>
+    <div class="formfield"><label for="end">Окончание</label><input id="end" type="time"></div>
+   </div>
+   <div class="work-actions"><button class="primary" onclick="assign()">Сохранить назначение</button><button onclick="document.getElementById('assignment').classList.add('hide')">Отмена</button></div>
+  </section>
+  <section id="paySection" class="card pay-card hide">
+   <div class="card-header"><div><h2>Еженедельные выплаты</h2><p>Начисления по назначенным сменам выбранной недели</p></div></div>
+   <div id="pay" class="table-scroll"></div>
+  </section>
+  <section id="owner" class="card settings-card hide">
+   <div class="card-header"><div><h2>Настройки точки</h2><p>Изменить рабочие дни, команду и ставки оплаты</p></div><button onclick="toggleSettings()">Закрыть ×</button></div>
+   <div class="grid-form">
+    <div class="formfield"><label for="editName">Название точки</label><input id="editName"></div>
+    <div class="formfield"><label for="editPositions">Мест в смене</label><input id="editPositions" type="number" min="1" max="10"></div>
+    <div class="formfield"><label for="editOpens">Начало работы</label><input id="editOpens" type="time"></div>
+    <div class="formfield"><label for="editCloses">Окончание работы</label><input id="editCloses" type="time"></div>
+    <div class="formfield"><label for="editShift">Ставка за смену, ₽</label><input id="editShift" type="number" min="1"></div>
+    <div class="formfield"><label for="editHour">Ставка за час, ₽</label><input id="editHour" type="number" min="1"></div>
+    <div class="formfield wide"><label>Рабочие дни</label><div id="editDays" class="day-checks"></div></div>
+    <div class="formfield wide"><label for="editNames">Сотрудники (каждое имя с новой строки)</label><textarea id="editNames" rows="4"></textarea></div>
+   </div>
+   <div class="work-actions"><button class="primary" onclick="settings()">Сохранить настройки</button><button onclick="toggleSettings()">Отмена</button></div>
+  </section>
+  <footer class="foot">По графику · Смены, сотрудники и выплаты в одном месте</footer>
+ </main>
+</div><script>
 const API='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-v2',KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_',E=id=>document.getElementById(id);let token=sessionStorage.getItem('pvz2token')||'',s=null;
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),add=(v,n)=>{let d=new Date(v+'T12:00:00');d.setDate(d.getDate()+n);return iso(d)},monday=v=>add(v,-(new Date(v+'T12:00:00').getDay()+6)%7),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),rub=n=>Number(n).toLocaleString('ru-RU')+' ₽';
 const days=id=>[...E(id).querySelectorAll('input:checked')].map(x=>+x.value),dayUI=(id,checked)=>E(id).innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((x,i)=>'<label style="display:inline-block"><input type="checkbox" value="'+i+'" '+(checked.includes(i)?'checked':'')+'>'+x+'</label> ').join(''),list=id=>E(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
-function mode(b){E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
+function mode(b){E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('regTab').classList.toggle('is-active',!b);E('signinTab').classList.toggle('is-active',b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
 async function api(action,p={}){let r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...p})});let v=await r.json();if(!r.ok)throw Error(v.error||'Ошибка сервера');return v}
 async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});enter(r)}catch(e){E('error').textContent=e.message}}
 async function login(){try{enter(await api('login',{code:E('signinCode').value.trim().toLowerCase(),role:E('role').value,password:E('pass').value}))}catch(e){E('error').textContent=e.message}}
@@ -16,18 +256,51 @@ function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el
 function chooseShift(date,position){E('assignment').classList.remove('hide');E('date').value=date;E('position').value=String(position);E('assignment').scrollIntoView({behavior:'smooth',block:'nearest'})}
 function draw(){
  if(!s)return;
+ const all=Array.isArray(s.schedule)?s.schedule:[];
+ const today=iso(new Date());
+ const from=monday(E('week').value||today),to=add(from,6);E('week').value=from;
+ const workdays=Array.from({length:7},(_,i)=>({date:add(from,i),dow:i,open:s.config.days.includes(i)}));
+ const active=workdays.filter(x=>x.open),assigned=all.filter(x=>x.date>=from&&x.date<=to),free=Math.max(0,active.length*s.config.positions-assigned.length);
+ const owed=assigned.reduce((a,x)=>a+Number(x.pay||0),0);
+ const fmt=v=>new Date(v+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
  E('company').textContent=s.name;
  E('summary').textContent=s.employees.length+' сотрудников · '+s.config.positions+' мест в смене · '+s.config.opens+'–'+s.config.closes;
- E('settingsBtn').classList.toggle('hide',s.role!=='owner');E('paySection').classList.toggle('hide',s.role!=='owner');
+ E('period').textContent=fmt(from)+' — '+fmt(to)+' · '+assigned.length+' назначений';
+ E('settingsBtn').classList.toggle('hide',s.role!=='owner');
+ E('paySection').classList.toggle('hide',s.role!=='owner');
  if(s.role!=='owner')E('owner').classList.add('hide');
+ const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
  E('position').innerHTML=Array.from({length:s.config.positions},(_,i)=>'<option value="'+i+'">Место '+(i+1)+'</option>').join('');
- E('start').value=s.config.opens;E('end').value=s.config.closes;
- const from=monday(E('week').value||iso(new Date()));E('week').value=from;
- let head='<thead><tr><th>Дата / день</th>'+Array.from({length:s.config.positions},(_,p)=>'<th>Смена №'+(p+1)+'</th>').join('')+'</tr></thead>';
- let rows=Array.from({length:7},(_,i)=>{const d=add(from,i),day=(new Date(d+'T12:00:00').getDay()+6)%7,open=s.config.days.includes(day);return '<tr class="'+(!open?'offrow':day>4?'weekend':'')+'"><td><b>'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][day]+'</b><div>'+d.slice(8)+'.'+d.slice(5,7)+'</div></td>'+Array.from({length:s.config.positions},(_,p)=>{let r=s.schedule.find(x=>x.date===d&&x.position===p);return '<td>'+(open?(r?'<div class="slot busy"><b>'+esc(r.employee)+'</b><div>'+r.start+'–'+r.end+'</div>'+(s.role==='owner'?'<b>'+rub(r.pay)+'</b><div><button onclick="removeShift(\''+r.id+'\')">Снять запись</button></div>':'')+'</div>':'<button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<br>+ Назначить</button>'):'Выходной')+'</td>'}).join('')+'</tr>'}).join('');
- E('calendar').innerHTML='<table class="weektable">'+head+'<tbody>'+rows+'</tbody></table>';
- if(s.role==='owner'){E('pay').innerHTML='<table><tr><th>Сотрудник</th><th>Начислено</th><th>Статус</th></tr>'+s.employees.map(n=>{let sum=s.schedule.filter(x=>x.date>=from&&x.date<=add(from,6)&&x.employee===n).reduce((a,x)=>a+Number(x.pay||0),0);return '<tr><td>'+esc(n)+'</td><td>'+rub(sum)+'</td><td>'+(s.payments[from+'|'+n]?'Выплачено':'<button onclick="paid(\''+encodeURIComponent(n)+'\')">Отметить</button>')+'</td></tr>'}).join('')+'</table>'}
+ if(existingEmp&&E('employee').querySelector('option[value="'+existingEmp+'"]'))E('employee').value=existingEmp;
+ if(existingPos&&E('position').querySelector('option[value="'+existingPos+'"]'))E('position').value=existingPos;
+ if(!E('start').value)E('start').value=s.config.opens;
+ if(!E('end').value)E('end').value=s.config.closes;
+ E('metrics').innerHTML=
+  '<div class="metric featured"><span class="metric-label">Занято смен</span><strong>'+assigned.length+'</strong><small>На выбранной неделе</small></div>'+
+  '<div class="metric"><span class="metric-label">Свободных мест</span><strong>'+free+'</strong><small>Можно назначить сотрудников</small></div>'+
+  (s.role==='owner'?'<div class="metric"><span class="metric-label">Начислено за неделю</span><strong>'+rub(owed)+'</strong><small>До подтверждения выплат</small></div>':'<div class="metric"><span class="metric-label">Сотрудников</span><strong>'+s.employees.length+'</strong><small>В вашей команде</small></div>');
+ const header='<thead><tr><th>Дата</th>'+Array.from({length:s.config.positions},(_,i)=>'<th>Смена №'+(i+1)+'</th>').join('')+'</tr></thead>';
+ const rows=workdays.map(x=>{
+  const d=x.date,weekend=x.dow>=5,open=x.open;
+  return '<tr class="'+(!open?'offrow ':weekend?'weekend ':'')+(d===today?'todayrow':'')+'">'+
+   '<td class="daycell"><strong>'+['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][x.dow]+'</strong><small>'+fmt(d)+(d===today?' · сегодня':'')+'</small></td>'+
+   Array.from({length:s.config.positions},(_,p)=>{
+    if(!open)return '<td>Выходной</td>';
+    const r=all.find(v=>v.date===d&&v.position===p);
+    if(!r)return '<td><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
+    return '<td><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+
+      '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+'</div>'+
+      (s.role==='owner'?'<span class="shift-pay">'+rub(r.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
+      '</div></td>';
+   }).join('')+'</tr>';
+ }).join('');
+ E('calendar').innerHTML='<table class="weektable">'+header+'<tbody>'+rows+'</tbody></table>';
+ if(s.role==='owner'){
+  const paid=s.payments||{};
+  E('pay').innerHTML='<table class="paytable"><thead><tr><th>Сотрудник</th><th>Начислено</th><th>Выплата</th></tr></thead><tbody>'+
+  s.employees.map(n=>{const sum=assigned.filter(x=>x.employee===n).reduce((a,x)=>a+Number(x.pay||0),0);return '<tr><td>'+esc(n)+'</td><td class="sum">'+rub(sum)+'</td><td>'+(paid[from+'|'+n]?'<span class="paidstatus">✓ Выплачено</span>':'<button class="small" onclick="paid(\''+encodeURIComponent(n)+'\')">Отметить выплату</button>')+'</td></tr>'}).join('')+'</tbody></table>';
+ }
 }
 async function mutate(action,p){try{let r=await api(action,{...p,expectedVersion:s.version});s=normalize(r.company);draw();E('status').textContent='Сохранено';if(action==='assign')E('assignment').classList.add('hide');if(action==='settings')E('owner').classList.add('hide')}catch(e){E('status').textContent=e.message}}
 function assign(){mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,kind:E('kind').value,start:E('start').value,end:E('end').value})}
@@ -35,5 +308,5 @@ function removeShift(id){if(confirm('Снять сотрудника со сме
 function settings(){mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
 function paid(n){mutate('paid',{week:monday(E('week').value),employee:decodeURIComponent(n)})}
 function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
-dayUI('days',[0,1,2,3,4,5,6]);namesFill();if(token)api('load').then(enter).catch(logout);
-</script></html>
+dayUI('days',[0,1,2,3,4,5,6]);namesFill();mode(false);if(token)api('load').then(enter).catch(logout);
+</script></body></html>
