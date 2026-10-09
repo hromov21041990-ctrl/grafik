@@ -126,7 +126,7 @@ h3{font-size:17px}
 @media(max-width:1050px){.auth-layout{grid-template-columns:1fr}.auth-story{position:static;padding:8px 0 0}.auth-story h1{font-size:38px}.benefits{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;gap:10px}.benefit{align-items:flex-start}.benefit-icon{display:none}.auth-card{max-width:760px;width:100%}}
 @media(max-width:700px){.page{padding:0 14px 34px}.topbar{height:76px}.brandname{font-size:19px}.brandmark{width:38px;height:38px}.topbadge{font-size:10px;padding:6px 9px}.auth-layout{gap:10px;padding-top:19px}.auth-story h1{font-size:30px;letter-spacing:-1px}.auth-story>p{font-size:14px}.benefits{display:none}.auth-card,.card{padding:18px}.grid-form{grid-template-columns:1fr 1fr;gap:12px}.hero{align-items:flex-start;flex-direction:column}.hero h1{font-size:27px}.metrics{gap:8px}.metric{padding:13px;min-height:104px}.metric strong{font-size:20px}.metric .metric-label{font-size:11px}.metric small{font-size:10px}.weektable{min-width:650px}.weektable th:first-child{width:116px}.weektable th,.weektable td{padding:9px}.weektable .daycell{padding:13px 8px}.slot{padding:9px}.slotbtn{padding:9px}.week-nav{width:100%}.work-card .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.metrics{grid-template-columns:1fr 1fr}.metrics .metric:last-child{grid-column:span 2}.auth-card .grid-form{grid-template-columns:1fr}.auth-card .formfield.wide{grid-column:1}.week-nav input{width:145px}.topbadge{display:none}}
-</style></head>
+.pass-wrap{display:flex;gap:6px;align-items:stretch}.pass-wrap input{flex:1;min-width:0}.pass-wrap button{flex:0 0 43px;padding:8px;background:#f7f6ff;color:#5547ad}.recovery-panel{background:#f3f0ff;border:1px solid #d8d0fc;border-radius:12px;padding:15px;margin:16px 0;overflow-wrap:anywhere}.recovery-code{font:700 15px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:all;letter-spacing:.6px}.text-link{border:0;background:none!important;color:#6754d7!important;text-decoration:underline;padding:8px 0}.security-box{border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.security-message{color:#2e735c;font-size:13px;font-weight:650;overflow-wrap:anywhere}</style></head>
 <body>
 <div class="page">
  <header class="topbar" aria-label="По графику">
@@ -151,8 +151,8 @@ h3{font-size:17px}
     <div class="grid-form">
      <div class="formfield"><label for="name">Название компании или точки</label><input id="name" placeholder="Например, Магазин на Ленина" autocomplete="organization"></div>
      <div class="formfield"><label for="code">Код для входа (латиницей)</label><input id="code" placeholder="my-shop" autocapitalize="none" autocomplete="off"></div>
-     <div class="formfield"><label for="ownerPass">Пароль владельца (10+ знаков)</label><input id="ownerPass" type="password" autocomplete="new-password"></div>
-     <div class="formfield"><label for="staffPass">Пароль сотрудника (10+ знаков)</label><input id="staffPass" type="password" autocomplete="new-password"></div>
+     <div class="formfield"><label for="ownerPass">Пароль владельца (10+ знаков)</label><div class="pass-wrap"><input id="ownerPass" type="password" autocomplete="new-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('ownerPass',this)">◉</button></div></div>
+     <div class="formfield"><label for="staffPass">Пароль сотрудника (10+ знаков)</label><div class="pass-wrap"><input id="staffPass" type="password" autocomplete="new-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('staffPass',this)">◉</button></div></div>
     </div>
     <div class="formgroup"><h3>Команда и график</h3>
      <div class="grid-form">
@@ -168,17 +168,18 @@ h3{font-size:17px}
      <div class="formfield"><label for="shift">Ставка за смену, ₽</label><input id="shift" type="number" min="1" value="3000"></div>
      <div class="formfield"><label for="hour">Ставка за час, ₽</label><input id="hour" type="number" min="1" value="200"></div>
     </div></div>
-    <button class="primary buttonwide" onclick="register()">Создать точку и открыть график →</button>
+    <button class="primary buttonwide" onclick="register()">Создать точку и открыть график →</button><p class="formnote">После регистрации сохраните резервный код для восстановления доступа.</p>
    </div>
    <div id="signin" class="hide">
     <h2 class="formtitle">С возвращением!</h2><p class="formnote">Войдите, чтобы управлять сменами и выплатами.</p>
     <div class="grid-form">
      <div class="formfield wide"><label for="signinCode">Код вашей точки</label><input id="signinCode" placeholder="my-shop" autocapitalize="none" autocomplete="username"></div>
      <div class="formfield wide"><label for="role">Роль</label><select id="role"><option value="owner">Владелец</option><option value="staff">Сотрудник</option></select></div>
-     <div class="formfield wide"><label for="pass">Пароль</label><input id="pass" type="password" autocomplete="current-password"></div>
+     <div class="formfield wide"><label for="pass">Пароль</label><div class="pass-wrap"><input id="pass" type="password" autocomplete="current-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('pass',this)">◉</button></div></div>
     </div>
-    <button class="primary buttonwide" onclick="login()">Войти в график →</button>
+    <button class="primary buttonwide" onclick="login()">Войти в график →</button><button class="text-link" type="button" onclick="showRecovery(true)">Забыли пароль владельца?</button>
    </div>
+   <div id="recoveryForm" class="hide"><h2>Восстановление доступа</h2><p class="formnote">Введите код точки, резервный код владельца и новый пароль. Резервный код выдаётся при регистрации или в настройках.</p><div class="grid-form"><div class="formfield wide"><label for="recoverCompany">Код точки</label><input id="recoverCompany" autocomplete="off"></div><div class="formfield wide"><label for="recoverCode">Резервный код</label><input id="recoverCode" autocomplete="off"></div><div class="formfield wide"><label for="recoverPassword">Новый пароль владельца</label><div class="pass-wrap"><input id="recoverPassword" type="password" autocomplete="new-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('recoverPassword',this)">◉</button></div></div></div><button class="primary buttonwide" onclick="recoverPassword()">Установить новый пароль</button><button class="text-link" onclick="showRecovery(false)">Назад ко входу</button></div><div id="recoveryResult" class="recovery-panel hide"></div>
    <p id="error" class="error" role="alert"></p>
   </section>
  </div>
@@ -235,6 +236,12 @@ h3{font-size:17px}
     <div class="formfield wide"><label for="editNames">Сотрудники (каждое имя с новой строки)</label><textarea id="editNames" rows="4"></textarea></div>
    </div>
    <div class="work-actions"><button class="primary" onclick="settings()">Сохранить настройки</button><button onclick="toggleSettings()">Отмена</button></div>
+   <div class="security-box"><h3>Безопасность и доступ</h3><p class="formnote">Здесь владелец может менять пароли и создавать новый резервный код. Новый код отменяет предыдущий.</p>
+   <div class="grid-form"><div class="formfield"><label for="newOwnerPassword">Новый пароль владельца</label><div class="pass-wrap"><input id="newOwnerPassword" type="password" autocomplete="new-password" placeholder="Не менее 10 символов"><button type="button" aria-label="Показать пароль" onclick="togglePassword('newOwnerPassword',this)">◉</button></div></div>
+   <div class="formfield"><label for="newStaffPassword">Новый пароль сотрудников</label><div class="pass-wrap"><input id="newStaffPassword" type="password" autocomplete="new-password" placeholder="Не менее 10 символов"><button type="button" aria-label="Показать пароль" onclick="togglePassword('newStaffPassword',this)">◉</button></div></div></div>
+   <div class="work-actions"><button onclick="changePasswords()">Изменить пароли</button><button onclick="rotateRecovery()">Создать новый резервный код</button></div>
+   <p id="securityStatus" class="security-message" role="status"></p><div id="ownerRecoveryResult" class="recovery-panel hide"></div>
+   </div>
   </section>
   <footer class="foot">По графику · Смены, сотрудники и выплаты в одном месте</footer>
  </main>
@@ -242,9 +249,9 @@ h3{font-size:17px}
 const API='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-v2',KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_',E=id=>document.getElementById(id);let token=sessionStorage.getItem('pvz2token')||'',s=null;
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),add=(v,n)=>{let d=new Date(v+'T12:00:00');d.setDate(d.getDate()+n);return iso(d)},monday=v=>add(v,-(new Date(v+'T12:00:00').getDay()+6)%7),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),rub=n=>Number(n).toLocaleString('ru-RU')+' ₽';
 const days=id=>[...E(id).querySelectorAll('input:checked')].map(x=>+x.value),dayUI=(id,checked)=>E(id).innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((x,i)=>'<label style="display:inline-block"><input type="checkbox" value="'+i+'" '+(checked.includes(i)?'checked':'')+'>'+x+'</label> ').join(''),list=id=>E(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
-function mode(b){E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('regTab').classList.toggle('is-active',!b);E('signinTab').classList.toggle('is-active',b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
+function mode(b){E('recoveryForm').classList.add('hide');E('recoveryResult').classList.add('hide');E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('regTab').classList.toggle('is-active',!b);E('signinTab').classList.toggle('is-active',b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
 async function api(action,p={}){let r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...p})});let v=await r.json();if(!r.ok)throw Error(v.error||'Ошибка сервера');return v}
-async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});enter(r)}catch(e){E('error').textContent=e.message}}
+async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});enter(r);if(r.recoveryCode){showCode('ownerRecoveryResult',r.recoveryCode);E('owner').classList.remove('hide');E('owner').scrollIntoView({behavior:'smooth',block:'start'})}}catch(e){E('error').textContent=e.message}}
 async function login(){try{enter(await api('login',{code:E('signinCode').value.trim().toLowerCase(),role:E('role').value,password:E('pass').value}))}catch(e){E('error').textContent=e.message}}
 function enter(r){token=r.token||token;sessionStorage.setItem('pvz2token',token);s=normalize(r.company);E('auth').classList.add('hide');E('app').classList.remove('hide');E('week').value=monday(iso(new Date()));E('date').value=iso(new Date());fill();E('owner').classList.add('hide');E('assignment').classList.add('hide');draw()}
 function fill(){E('editName').value=s.name;E('editPositions').value=s.config.positions;E('editOpens').value=s.config.opens;E('editCloses').value=s.config.closes;E('editShift').value=s.rates.shift;E('editHour').value=s.rates.hour;E('editNames').value=s.employees.join('\n');dayUI('editDays',s.config.days)}
@@ -308,5 +315,12 @@ function removeShift(id){if(confirm('Снять сотрудника со сме
 function settings(){mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
 function paid(n){mutate('paid',{week:monday(E('week').value),employee:decodeURIComponent(n)})}
 function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
+function togglePassword(id,btn){const x=E(id),shown=x.type==='password';x.type=shown?'text':'password';btn.textContent=shown?'◌':'◉';btn.setAttribute('aria-label',shown?'Скрыть пароль':'Показать пароль')}
+function showCode(id,code){const box=E(id);box.classList.remove('hide');box.innerHTML='<b>Сохраните новый резервный код:</b><div class="recovery-code">'+esc(code)+'</div><p class="formnote">Код показан только сейчас. Храните его отдельно от пароля — без него восстановить доступ нельзя.</p><button onclick="copyRecovery(\''+code+'\')">Скопировать код</button>'}
+function copyRecovery(code){if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(code).then(()=>alert('Код скопирован')).catch(()=>prompt('Скопируйте код',code));else prompt('Скопируйте код',code)}
+function showRecovery(show){E('recoveryForm').classList.toggle('hide',!show);E('signin').classList.toggle('hide',show);E('reg').classList.add('hide');E('error').textContent='';E('recoveryResult').classList.add('hide');if(show)E('recoverCompany').value=E('signinCode').value}
+async function recoverPassword(){try{const code=E('recoverCompany').value.trim().toLowerCase();const r=await api('resetPassword',{code,recoveryCode:E('recoverCode').value,newPassword:E('recoverPassword').value});showCode('recoveryResult',r.recoveryCode);E('error').textContent='Пароль владельца изменён. Сохраните новый резервный код, затем войдите с новым паролем.';E('recoverCode').value='';E('recoverPassword').value=''}catch(e){E('error').textContent=e.message}}
+async function changePasswords(){const owner=E('newOwnerPassword').value,staff=E('newStaffPassword').value;if(!owner&&!staff)return E('securityStatus').textContent='Введите новый пароль владельца или сотрудников.';const patch={};if(owner)patch.ownerPassword=owner;if(staff)patch.staffPassword=staff;try{const r=await api('security',{...patch,expectedVersion:s.version});s=normalize(r.company);E('newOwnerPassword').value='';E('newStaffPassword').value='';E('securityStatus').textContent='Пароли обновлены. Другим устройствам потребуется повторный вход.'}catch(e){E('securityStatus').textContent=e.message}}
+async function rotateRecovery(){if(!confirm('Создать новый резервный код? Предыдущий перестанет работать.'))return;try{const r=await api('security',{rotateRecovery:true,expectedVersion:s.version});s=normalize(r.company);showCode('ownerRecoveryResult',r.recoveryCode);E('securityStatus').textContent='Резервный код обновлён. Сохраните его в надёжном месте.'}catch(e){E('securityStatus').textContent=e.message}}
 dayUI('days',[0,1,2,3,4,5,6]);namesFill();mode(false);if(token)api('load').then(enter).catch(logout);
 </script></body></html>
