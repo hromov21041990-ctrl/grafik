@@ -326,7 +326,10 @@ a,.kicker{color:#0BA77E}
 .support-honeypot{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}
 body.help-open{overflow:hidden}
 @media(max-width:767px){
- .help-top-link{font-size:11px;padding:8px 9px}
+ .help-top-link{font-size:0;width:42px;min-width:42px;height:42px;padding:0;display:grid;place-items:center}
+ .help-top-link:before{content:"?";font-size:17px;font-weight:900;line-height:1}
+ .topbar .brand{min-width:0}
+ .brandhint{max-width:175px}
  .header-tools .topbadge{display:none}
  .help-fab{bottom:calc(18px + env(safe-area-inset-bottom));right:14px;padding:11px 13px}
  body.beta-in-app.has-mobile-help-nav .help-fab{display:none}
@@ -347,7 +350,7 @@ body.help-open{overflow:hidden}
 <div class="page">
  <header class="topbar" aria-label="По графику">
   <div class="brand"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 52 52" width="42" height="42" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="9" width="34" height="34" rx="8" fill="#0F2D3D"/><rect x="7" y="16" width="34" height="7" fill="#22C998"/><path d="M16 7v7M33 7v7" stroke="#22C998" stroke-width="5" stroke-linecap="round"/><rect x="14" y="27" width="6" height="6" rx="1.5" fill="#22C998"/><rect x="25" y="27" width="6" height="6" rx="1.5" fill="#22C998"/><rect x="14" y="36" width="6" height="5" rx="1.5" fill="#22C998"/><circle cx="36" cy="37" r="12" fill="#22C998" stroke="white" stroke-width="2"/><path d="m30.5 37 4 4 7-8" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="brandname">По графику</div><span class="brandhint">Смены и выплаты без лишних хлопот</span></div></div>
-  <div class="header-tools"><button type="button" class="help-top-link" onclick="openHelp('guide')">❔ Помощник и поддержка</button><span class="topbadge">Версия 2.0 · Бета</span></div>
+  <div class="header-tools"><button type="button" class="help-top-link" aria-label="Помощник и поддержка" onclick="openHelp('guide')">❔ Помощник и поддержка</button><span class="topbadge">Версия 2.0 · Бета</span></div>
  </header>
  <div id="auth" class="auth-layout">
   <div class="auth-story">
@@ -769,7 +772,7 @@ function openHelp(tab='guide'){
  setHelpTab(tab);
  const email=s?E('emailLogin').value.trim():E('emailLogin').value.trim()||E('ownerEmail').value.trim();
  if(email&&!E('supportEmail').value)E('supportEmail').value=email;
- if(s?.code)E('supportPoint').value=s.code;
+ if(s?.code&&!E('app').classList.contains('hide'))E('supportPoint').value=s.code;
  E('helpGuideTab').focus();
 }
 function closeHelp(){E('helpOverlay').classList.add('hide');document.body.classList.remove('help-open')}
@@ -797,7 +800,7 @@ async function sendSupportTicket(){
  const payload={action:'supportSubmit',category:E('supportCategory').value,title:E('supportTitle').value.trim(),message:E('supportMessage').value.trim(),email:E('supportEmail').value.trim(),pointCode:E('supportPoint').value.trim().toLowerCase(),website:E('supportWebsite').value};
  try{
   const headers={'Content-Type':'application/json',apikey:KEY};
-  if(s&&token)headers.Authorization='Bearer '+token;
+  if(s&&token&&!E('app').classList.contains('hide'))headers.Authorization='Bearer '+token;
   const r=await fetch('https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz2-support',{method:'POST',headers,body:JSON.stringify(payload)});
   const result=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(result.error||'Сервис поддержки недоступен');
