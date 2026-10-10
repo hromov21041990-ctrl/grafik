@@ -282,6 +282,15 @@ a,.kicker{color:#0BA77E}
  .brandhint{font-size:10px}
  .metric strong{font-size:20px}
 }
+
+/* Общие данные компании: индикатор синхронизации */
+.sync-bar{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;font-size:12px;color:#548276}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#22C998;box-shadow:0 0 0 3px #DFF8ED;flex:0 0 8px}
+.sync-dot.waiting{background:#7B9EB0;box-shadow:0 0 0 3px #E3EDF2}
+.sync-dot.error{background:#D37C52;box-shadow:0 0 0 3px #FDEADC}
+.sync-button{padding:4px 7px;border:0;background:transparent;font-size:12px;color:#128B70;font-weight:750;border-radius:6px}
+.sync-button:hover{background:#E6F9F3}
+@media(max-width:767px){.sync-bar{font-size:11px;gap:7px;margin-top:8px}.sync-button{font-size:11px}}
 </style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="page">
@@ -361,7 +370,7 @@ a,.kicker{color:#0BA77E}
    </aside>
    <div class="dashboard-content">
   <div class="hero">
-   <div><p class="kicker">Рабочая панель · По графику</p><h1 id="company"></h1><p id="summary" class="subtitle"></p></div>
+   <div><p class="kicker">Рабочая панель · По графику</p><h1 id="company"></h1><p id="summary" class="subtitle"></p><div class="sync-bar"><span id="syncDot" class="sync-dot" aria-hidden="true"></span><span id="syncState" role="status">Данные загружены</span><button class="sync-button" id="syncNowBtn" onclick="syncNow(true)" title="Получить изменения с других устройств">↻ Обновить</button></div></div>
    <div class="hero-actions"><button id="backPoints" class="hide" onclick="loadPoints()">← Мои точки</button>
     <button id="settingsBtn" class="hide" onclick="toggleSettings()">⚙ Настройки точки</button>
     <button class="ghost" onclick="logout()">Выйти ↗</button>
@@ -431,16 +440,45 @@ a,.kicker{color:#0BA77E}
   </div></div>
  </main>
 </div><script>
-const API='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-v2',KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_',E=id=>document.getElementById(id);let token=sessionStorage.getItem('pvz2token')||'',s=null;
+const API='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-v2',KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_',E=id=>document.getElementById(id);let token=sessionStorage.getItem('pvz2token')||'',s=null;let syncBusy=false,mutateBusy=false,lastSyncAttempt=0,editVersion=null;
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),add=(v,n)=>{let d=new Date(v+'T12:00:00');d.setDate(d.getDate()+n);return iso(d)},monday=v=>add(v,-(new Date(v+'T12:00:00').getDay()+6)%7),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),rub=n=>Number(n).toLocaleString('ru-RU')+' ₽';
 const days=id=>[...E(id).querySelectorAll('input:checked')].map(x=>+x.value),dayUI=(id,checked)=>E(id).innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((x,i)=>'<label style="display:inline-block"><input type="checkbox" value="'+i+'" '+(checked.includes(i)?'checked':'')+'>'+x+'</label> ').join(''),list=id=>E(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
 function mode(b){E('recoveryForm').classList.add('hide');E('recoveryResult').classList.add('hide');E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('regTab').classList.toggle('is-active',!b);E('signinTab').classList.toggle('is-active',b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
 async function api(action,p={}){let r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...p})});let v=await r.json();if(!r.ok)throw Error(v.error||'Ошибка сервера');return v}
 async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});enter(r);if(r.recoveryCode){showCode('ownerRecoveryResult',r.recoveryCode);E('owner').classList.remove('hide');E('owner').scrollIntoView({behavior:'smooth',block:'start'})}}catch(e){E('error').textContent=e.message}}
 async function login(){try{enter(await api('login',{code:E('signinCode').value.trim().toLowerCase(),role:E('role').value,password:E('pass').value}))}catch(e){E('error').textContent=e.message}}
-function enter(r){token=r.token||token;sessionStorage.setItem('pvz2token',token);s=normalize(r.company);E('auth').classList.add('hide');E('app').classList.remove('hide');E('week').value=monday(iso(new Date()));E('date').value=iso(new Date());fill();E('owner').classList.add('hide');E('assignment').classList.add('hide');draw()}
-function fill(){E('editName').value=s.name;E('editPositions').value=s.config.positions;E('editOpens').value=s.config.opens;E('editCloses').value=s.config.closes;E('editShift').value=s.rates.shift;E('editHour').value=s.rates.hour;E('editNames').value=s.employees.join('\n');dayUI('editDays',s.config.days)}
-async function reload(){let r=await api('load');s=normalize(r.company);draw()}
+function enter(r){token=r.token||token;sessionStorage.setItem('pvz2token',token);s=normalize(r.company);E('auth').classList.add('hide');E('app').classList.remove('hide');E('week').value=monday(iso(new Date()));E('date').value=iso(new Date());fill();E('owner').classList.add('hide');E('assignment').classList.add('hide');draw();syncLabel('Синхронизировано · '+syncClock(),'ok')}
+function fill(){editVersion=s.version;E('editName').value=s.name;E('editPositions').value=s.config.positions;E('editOpens').value=s.config.opens;E('editCloses').value=s.config.closes;E('editShift').value=s.rates.shift;E('editHour').value=s.rates.hour;E('editNames').value=s.employees.join('\n');dayUI('editDays',s.config.days)}
+function syncClock(){return new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function syncLabel(message,state='ok'){
+ E('syncState').textContent=message;
+ E('syncDot').className='sync-dot'+(state==='ok'?'':' '+state);
+}
+async function syncNow(force=false){
+ if(!s||!token||E('app').classList.contains('hide')||syncBusy||mutateBusy)return;
+ if(!force&&document.hidden)return;
+ if(!force&&Date.now()-lastSyncAttempt<10000)return;
+ const session=token;
+ syncBusy=true;lastSyncAttempt=Date.now();
+ if(force)syncLabel('Проверяем изменения…','waiting');
+ try{
+  const response=await api('load');
+  if(session!==token||!s||E('app').classList.contains('hide')||mutateBusy)return;
+  const latest=normalize(response.company);
+  if(Number(latest.version)>Number(s.version)){
+   s=latest;draw();
+   syncLabel('Обновлено с другого устройства · '+syncClock(),'ok');
+   if(!E('assignment').classList.contains('hide'))E('status').textContent='График обновился. Проверьте выбранное место перед назначением.';
+  }else syncLabel('Синхронизировано · '+syncClock(),'ok');
+ }catch(e){
+  if(session===token&&s)syncLabel('Не удалось обновить · '+String(e.message||'Проверьте соединение'),'error');
+ }finally{syncBusy=false}
+}
+async function reload(){return syncNow(true)}
+setInterval(()=>{if(s&&token&&!document.hidden)syncNow(false)},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow(false)});
+window.addEventListener('focus',()=>syncNow(false));
+window.addEventListener('online',()=>syncNow(true));
 function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule:[],payments:v.payments&&typeof v.payments==='object'?v.payments:{}}}
 function moveWeek(n){E('week').value=add(monday(E('week').value||iso(new Date())),7*n);draw()}
 function currentWeek(){E('week').value=monday(iso(new Date()));draw()}
@@ -513,10 +551,31 @@ function draw(){
   s.employees.map(n=>{const sum=assigned.filter(x=>x.employee===n).reduce((a,x)=>a+Number(x.pay||0),0);return '<tr><td>'+esc(n)+'</td><td class="sum">'+rub(sum)+'</td><td>'+(paid[from+'|'+n]?'<span class="paidstatus">✓ Выплачено</span>':'<button class="small" onclick="paid(\''+encodeURIComponent(n)+'\')">Отметить выплату</button>')+'</td></tr>'}).join('')+'</tbody></table>';
  }
 }
-async function mutate(action,p){try{let r=await api(action,{...p,expectedVersion:s.version});s=normalize(r.company);draw();E('status').textContent='Сохранено';if(action==='assign')E('assignment').classList.add('hide');if(action==='settings')E('owner').classList.add('hide')}catch(e){E('status').textContent=e.message}}
+async function mutate(action,p){
+ if(!s||mutateBusy)return;
+ mutateBusy=true;let needSync=false;
+ const session=token;
+ try{
+  const r=await api(action,{...p,expectedVersion:s.version});
+  if(session!==token||!s)return;
+  if(Number(r.company.version)>=Number(s.version))s=normalize(r.company);
+  draw();syncLabel('Сохранено и синхронизировано · '+syncClock(),'ok');
+  E('status').textContent='Сохранено. Остальные устройства увидят изменение автоматически.';
+  if(action==='assign')E('assignment').classList.add('hide');
+  if(action==='settings')E('owner').classList.add('hide');
+ }catch(e){
+  if(session!==token)return;
+  const message=String(e.message||'Ошибка сохранения');
+  needSync=/изменил|изменился|изменены|занято|назначен|Обновите страницу|не найдена/i.test(message);
+  E('status').textContent='Не сохранено: '+message+(needSync?' Загружаем свежий график.':'');
+ }finally{
+  mutateBusy=false;
+  if(needSync&&session===token)await syncNow(true);
+ }
+}
 function assign(){mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,kind:E('kind').value,start:E('start').value,end:E('end').value})}
 function removeShift(id){if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
-function settings(){mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
+function settings(){if(editVersion!==s.version){E('status').textContent='За время редактирования данные точки изменились. Закройте и снова откройте настройки, чтобы не перезаписать чужие изменения.';E('status').scrollIntoView({behavior:'smooth',block:'nearest'});return}mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
 function paid(n){mutate('paid',{week:monday(E('week').value),employee:decodeURIComponent(n)})}
 function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
 function togglePassword(id,btn){const x=E(id),shown=x.type==='password';x.type=shown?'text':'password';btn.textContent=shown?'◌':'◉';btn.setAttribute('aria-label',shown?'Скрыть пароль':'Показать пароль')}
@@ -535,7 +594,7 @@ async function signupEmail(){try{if(!sb)throw Error('Не загрузился �
 async function loadPoints(){try{const q=await emailCall('emailPoints');E('auth').classList.add('hide');E('app').classList.add('hide');E('pointPicker').classList.remove('hide');E('pointsList').innerHTML=q.points.map(p=>'<button onclick="enterPoint(\''+p.id+'\')">'+esc(p.name)+' · '+esc(p.code)+'</button>').join('')||'<p class="muted">Пока нет точек. Создайте первую.</p>'}catch(e){alert(e.message)}}
 async function enterPoint(id){try{const q=await emailCall('emailEnter',{pointId:id});enter(q);E('pointPicker').classList.add('hide');E('backPoints').classList.remove('hide')}catch(e){alert(e.message)}}
 function showPointSetup(){addingPoint=true;E('pointPicker').classList.add('hide');E('auth').classList.remove('hide');E('emailSignup').classList.add('hide');E('reg').classList.remove('hide');E('signin').classList.add('hide')}
-async function accountLogout(){if(sb)await sb.auth.signOut();token='';sessionStorage.removeItem('pvz2token');E('pointPicker').classList.add('hide');E('app').classList.add('hide');E('auth').classList.remove('hide');addingPoint=false;mode(true)}
+async function accountLogout(){if(sb)await sb.auth.signOut();token='';s=null;sessionStorage.removeItem('pvz2token');E('pointPicker').classList.add('hide');E('app').classList.add('hide');E('auth').classList.remove('hide');addingPoint=false;mode(true)}
 async function register(){try{const q=await emailCall('emailCreate',{name:E('name').value,code:E('code').value.trim().toLowerCase(),staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});addingPoint=false;await enterPoint(q.point.id)}catch(e){E('error').textContent=e.message}}
 function authErrorText(e){const code=String(e?.code||''),message=String(e?.message||'Ошибка авторизации');
  if(code==='invalid_credentials'||/Invalid login credentials/i.test(message))return 'Неверный email или пароль. Проверьте сохранённый пароль в «Паролях» телефона или восстановите доступ по email.';
