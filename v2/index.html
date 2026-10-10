@@ -329,7 +329,7 @@ body.help-open{overflow:hidden}
  .help-top-link{font-size:11px;padding:8px 9px}
  .header-tools .topbadge{display:none}
  .help-fab{bottom:calc(18px + env(safe-area-inset-bottom));right:14px;padding:11px 13px}
- body.beta-in-app .help-fab{display:none}
+ body.beta-in-app.has-mobile-help-nav .help-fab{display:none}
  .mobile-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
  .help-overlay{padding:8px}
  .help-dialog{max-height:94dvh;border-radius:16px}
@@ -596,6 +596,7 @@ function draw(){
  E('settingsBtn').classList.toggle('hide',s.role!=='owner');
  E('paySection').classList.toggle('hide',s.role!=='owner');
  E('mobileNav').classList.toggle('hide',s.role!=='owner');
+ document.body.classList.toggle('has-mobile-help-nav',s.role==='owner');
  if(s.role!=='owner')E('owner').classList.add('hide');
  const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
@@ -657,7 +658,7 @@ function assign(){mutate('assign',{date:E('date').value,position:+E('position').
 function removeShift(id){if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
 function settings(){if(editVersion!==s.version){E('status').textContent='За время редактирования данные точки изменились. Закройте и снова откройте настройки, чтобы не перезаписать чужие изменения.';E('status').scrollIntoView({behavior:'smooth',block:'nearest'});return}mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
 function paid(n){mutate('paid',{week:monday(E('week').value),employee:decodeURIComponent(n)})}
-function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');document.body.classList.remove('beta-in-app');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
+function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');document.body.classList.remove('beta-in-app','has-mobile-help-nav');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
 function togglePassword(id,btn){const x=E(id),shown=x.type==='password';x.type=shown?'text':'password';btn.textContent=shown?'◌':'◉';btn.setAttribute('aria-label',shown?'Скрыть пароль':'Показать пароль')}
 function showCode(id,code){const box=E(id);box.classList.remove('hide');box.innerHTML='<b>Сохраните новый резервный код:</b><div class="recovery-code">'+esc(code)+'</div><p class="formnote">Код показан только сейчас. Храните его отдельно от пароля — без него восстановить доступ нельзя.</p><button onclick="copyRecovery(\''+code+'\')">Скопировать код</button>'}
 function copyRecovery(code){if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(code).then(()=>alert('Код скопирован')).catch(()=>prompt('Скопируйте код',code));else prompt('Скопируйте код',code)}
@@ -674,7 +675,7 @@ async function signupEmail(){try{if(!sb)throw Error('Не загрузился �
 async function loadPoints(){try{const q=await emailCall('emailPoints');E('auth').classList.add('hide');E('app').classList.add('hide');E('pointPicker').classList.remove('hide');document.body.classList.remove('beta-in-app');E('pointsList').innerHTML=q.points.map(p=>'<button onclick="enterPoint(\''+p.id+'\')">'+esc(p.name)+' · '+esc(p.code)+'</button>').join('')||'<p class="muted">Пока нет точек. Создайте первую.</p>'}catch(e){alert(e.message)}}
 async function enterPoint(id){try{const q=await emailCall('emailEnter',{pointId:id});enter(q);E('pointPicker').classList.add('hide');E('backPoints').classList.remove('hide')}catch(e){alert(e.message)}}
 function showPointSetup(){addingPoint=true;E('pointPicker').classList.add('hide');E('auth').classList.remove('hide');E('emailSignup').classList.add('hide');E('reg').classList.remove('hide');E('signin').classList.add('hide')}
-async function accountLogout(){if(sb)await sb.auth.signOut();token='';s=null;sessionStorage.removeItem('pvz2token');E('pointPicker').classList.add('hide');E('app').classList.add('hide');document.body.classList.remove('beta-in-app');E('auth').classList.remove('hide');addingPoint=false;mode(true)}
+async function accountLogout(){if(sb)await sb.auth.signOut();token='';s=null;sessionStorage.removeItem('pvz2token');E('pointPicker').classList.add('hide');E('app').classList.add('hide');document.body.classList.remove('beta-in-app','has-mobile-help-nav');E('auth').classList.remove('hide');addingPoint=false;mode(true)}
 async function register(){try{const q=await emailCall('emailCreate',{name:E('name').value,code:E('code').value.trim().toLowerCase(),staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});addingPoint=false;await enterPoint(q.point.id)}catch(e){E('error').textContent=e.message}}
 function authErrorText(e){const code=String(e?.code||''),message=String(e?.message||'Ошибка авторизации');
  if(code==='invalid_credentials'||/Invalid login credentials/i.test(message))return 'Неверный email или пароль. Проверьте сохранённый пароль в «Паролях» телефона или восстановите доступ по email.';
