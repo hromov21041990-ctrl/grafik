@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f5f6fb"><meta name="description" content="По графику — сервис управления сменами и выплатами для владельцев небольших команд">
+<meta name="theme-color" content="#0F2D3D"><meta name="description" content="По графику — сервис управления сменами и выплатами для владельцев небольших команд">
 <title>По графику — смены и выплаты · Бета 2.0</title><style>
 :root{--bg:#f5f6fb;--surface:#fff;--ink:#202339;--muted:#71778a;--line:#e7e9f2;--brand:#6954e8;--brand-dark:#5140c8;--brand-soft:#f0edff;--good:#169d70;--good-bg:#eaf9f2;--danger:#c75b5b;--shadow:0 12px 40px rgba(28,31,71,.055);color-scheme:light}
 *{box-sizing:border-box}
@@ -126,22 +126,178 @@ h3{font-size:17px}
 @media(max-width:1050px){.auth-layout{grid-template-columns:1fr}.auth-story{position:static;padding:8px 0 0}.auth-story h1{font-size:38px}.benefits{display:grid;grid-template-columns:repeat(3,1fr);max-width:none;gap:10px}.benefit{align-items:flex-start}.benefit-icon{display:none}.auth-card{max-width:760px;width:100%}}
 @media(max-width:700px){.page{padding:0 14px 34px}.topbar{height:76px}.brandname{font-size:19px}.brandmark{width:38px;height:38px}.topbadge{font-size:10px;padding:6px 9px}.auth-layout{gap:10px;padding-top:19px}.auth-story h1{font-size:30px;letter-spacing:-1px}.auth-story>p{font-size:14px}.benefits{display:none}.auth-card,.card{padding:18px}.grid-form{grid-template-columns:1fr 1fr;gap:12px}.hero{align-items:flex-start;flex-direction:column}.hero h1{font-size:27px}.metrics{gap:8px}.metric{padding:13px;min-height:104px}.metric strong{font-size:20px}.metric .metric-label{font-size:11px}.metric small{font-size:10px}.weektable{min-width:650px}.weektable th:first-child{width:116px}.weektable th,.weektable td{padding:9px}.weektable .daycell{padding:13px 8px}.slot{padding:9px}.slotbtn{padding:9px}.week-nav{width:100%}.work-card .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.metrics{grid-template-columns:1fr 1fr}.metrics .metric:last-child{grid-column:span 2}.auth-card .grid-form{grid-template-columns:1fr}.auth-card .formfield.wide{grid-column:1}.week-nav input{width:145px}.topbadge{display:none}}
-.pass-wrap{display:flex;gap:6px;align-items:stretch}.pass-wrap input{flex:1;min-width:0}.pass-wrap button{flex:0 0 43px;padding:8px;background:#f7f6ff;color:#5547ad}.recovery-panel{background:#f3f0ff;border:1px solid #d8d0fc;border-radius:12px;padding:15px;margin:16px 0;overflow-wrap:anywhere}.recovery-code{font:700 15px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:all;letter-spacing:.6px}.text-link{border:0;background:none!important;color:#6754d7!important;text-decoration:underline;padding:8px 0}.security-box{border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.security-message{color:#2e735c;font-size:13px;font-weight:650;overflow-wrap:anywhere}</style><link rel="stylesheet" href="./mobile.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
+.pass-wrap{display:flex;gap:6px;align-items:stretch}.pass-wrap input{flex:1;min-width:0}.pass-wrap button{flex:0 0 43px;padding:8px;background:#f7f6ff;color:#5547ad}.recovery-panel{background:#f3f0ff;border:1px solid #d8d0fc;border-radius:12px;padding:15px;margin:16px 0;overflow-wrap:anywhere}.recovery-code{font:700 15px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:all;letter-spacing:.6px}.text-link{border:0;background:none!important;color:#6754d7!important;text-decoration:underline;padding:8px 0}.security-box{border-top:1px solid var(--line);padding-top:22px;margin-top:22px}.security-message{color:#2e735c;font-size:13px;font-weight:650;overflow-wrap:anywhere}</style><link rel="stylesheet" href="./mobile.css"><style id="brand-theme">
+/* По графику — фирменный интерфейс, поверх базовых и мобильных стилей */
+:root{--bg:#F3F5F7;--surface:#fff;--ink:#0F2D3D;--muted:#637684;--line:#E5EAF0;--brand:#22C998;--brand-dark:#0DAE80;--brand-soft:#E6F9F3;--good:#059E74;--good-bg:#EAFCF5;--danger:#C65656;--shadow:0 9px 28px rgba(15,45,61,.065)}
+body{background:var(--bg);color:var(--ink)}
+.page{max-width:none;padding:0 0 30px}
+.topbar{max-width:none;height:88px;padding:0 max(32px,calc((100vw - 1490px)/2));background:white;border-bottom:1px solid var(--line)}
+.brand{gap:14px}
+.brand-symbol{width:50px;height:50px;display:grid;place-items:center;flex:0 0 50px}
+.brand-symbol svg{display:block;width:46px;height:46px}
+.brandname{font-size:24px;color:#0F2D3D;letter-spacing:-.9px}
+.brandhint{font-size:12px;color:#6A8190;letter-spacing:0}
+.topbadge{background:#E6F9F3;border-color:#BBF0DF;color:#0B8D70}
+.topbadge:before{background:#22C998}
+.card{border-radius:20px;box-shadow:var(--shadow);border-color:var(--line)}
+h1,h2,h3{color:#0F2D3D}
+button{border-color:var(--line);border-radius:12px;color:#0F2D3D}
+button:hover{background:#EDFAF6;border-color:#92DBC5}
+button.primary{background:var(--brand);border-color:var(--brand);color:#073B31;box-shadow:0 7px 17px rgba(34,201,152,.18)}
+button.primary:hover{background:#16B889}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(34,201,152,.26);outline-offset:2px}
+input:focus,select:focus,textarea:focus{border-color:#22C998;box-shadow:0 0 0 3px rgba(34,201,152,.14)}
+input,select,textarea{border-color:#DFE8EA}
+a,.kicker{color:#0BA77E}
+.auth-layout{max-width:1270px;margin:0 auto;padding:46px 28px 0;grid-template-columns:.91fr 1.09fr;gap:35px}
+.auth-story{padding-top:56px}
+.auth-story h1{font-size:50px;line-height:1.13;letter-spacing:-1.65px}
+.auth-story h1 em{color:#04B88B}
+.auth-story>p{color:#536F80}
+.benefit-icon{color:#04B88B;background:#DDF8ED;font-size:19px}
+.auth-card{border-top:5px solid #22C998}
+.auth-tabs{background:#EEF3F5}
+.auth-tabs button.is-active{color:#0B9271}
+.day-checks label{background:#F5FAF9}
+.pass-wrap button{background:#E6F9F3;color:#0F7E62}
+.text-link{color:#0B9676!important}
+.recovery-panel{background:#E6F9F3;border-color:#BCE8D9}
+.security-message{color:#0D8767}
+#pointPicker{max-width:860px;margin:30px auto!important}
+#pointsList>button{background:#F8FDFB}
+#pointsList>button:hover{background:#E6F9F3}
+.dashboard{padding:0}
+.dashboard-shell{display:grid;grid-template-columns:245px minmax(0,1fr);max-width:1530px;margin:0 auto;align-items:stretch}
+.desktop-sidebar{background:#fff;border-right:1px solid var(--line);padding:31px 16px 25px 19px;position:sticky;top:0;height:calc(100vh - 88px);min-height:640px;display:flex;flex-direction:column;align-self:start}
+.side-heading{font-size:10px;letter-spacing:1.2px;color:#91A1AA;font-weight:800;margin:0 11px 10px}
+.side-point{margin:0 10px 24px;color:#0F2D3D;font-weight:850;font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.side-nav{display:grid;gap:6px}
+.side-nav button{border:0;background:transparent;padding:13px 11px;display:flex;align-items:center;text-align:left;gap:11px;color:#54707D;font-weight:700;font-size:13px;min-height:48px}
+.side-nav button:hover{background:#F0FAF6}
+.side-nav button.nav-current{background:#E6F9F3;color:#087E63}
+.side-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:8px;background:#F1F6F7;color:#0F2D3D;font-size:18px;flex:0 0 25px}
+.nav-current .side-icon{background:#CCF5E8;color:#058D68}
+.sidebar-promo{margin-top:auto;background:linear-gradient(155deg,#0F2D3D,#10605C);color:#fff;padding:19px;border-radius:17px;overflow:hidden;position:relative}
+.sidebar-promo:after{content:"";position:absolute;width:95px;height:95px;right:-40px;top:-48px;border:19px solid rgba(34,201,152,.18);border-radius:50%}
+.promo-accent{background:#22C998;color:#093D32;border-radius:50%;display:grid;place-items:center;width:28px;height:28px;font-size:17px;font-weight:900;margin-bottom:15px}
+.sidebar-promo strong{font-size:18px;line-height:1.3;display:block}
+.sidebar-promo p{font-size:12px;color:#D0EEEC;margin:9px 0 0}
+.side-bottom{margin-top:18px;text-align:center;font-size:11px;color:#9AADB5}
+.dashboard-content{padding:28px 29px 36px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 265px;gap:17px;align-content:start}
+.dashboard-content>.hero,.dashboard-content>.metrics,.dashboard-content>#assignment,.dashboard-content>#paySection,.dashboard-content>#owner,.dashboard-content>.foot{grid-column:1/-1}
+.dashboard-content>.hero{margin-bottom:3px}
+.hero h1{font-size:30px;letter-spacing:-.8px}
+.hero .kicker{margin-bottom:8px}
+.hero-actions{justify-content:flex-end}
+.hero-actions .ghost{color:#657D88}
+.metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:0}
+.metric{padding:19px 17px;min-height:120px;border-radius:17px}
+.metric.featured{background:linear-gradient(125deg,#0F2D3D,#135C62);border-color:#0F2D3D}
+.metric.featured:after{border-color:rgba(34,201,152,.17)}
+.metric strong{color:#0F2D3D;font-size:28px;letter-spacing:-.65px;overflow-wrap:anywhere}
+.metric.featured strong{color:#fff}
+.metric .metric-label{font-size:12px}
+.metric small{font-size:11px}
+#calendarSection{grid-column:1;grid-row:3;min-width:0;padding:21px}
+.card-header h2{font-size:21px}
+.week-range{background:#F0F9F6;color:#347364}
+.calendar{border-radius:15px;border-color:var(--line)}
+.weektable th{background:#F6FAFB;color:#4D6876}
+.weektable .daycell{color:#0F2D3D}
+.weektable .weekend .daycell{background:#FFF9F2}
+.weektable .todayrow .daycell{box-shadow:inset 4px 0 0 #22C998}
+.weektable .todayrow .daycell small{color:#05996F}
+.slot.busy{background:#EAF5FF;border-color:#D7E9FB}
+.slot .person{color:#123C58}
+.slot .shift-time{color:#557B92}
+.slot .remove-btn{color:#3979A0;border-bottom-color:#93B6D0}
+.slotbtn{background:#E6F9F3;border-color:#8BE3C4;color:#0A6F56}
+.slotbtn:hover{background:#D0F4E6;border-color:#30C89A}
+.slotbtn small{color:#098B69}
+.legenddot{background:#E6F9F3;border-color:#8BE3C4}
+.legenddot.busy-dot{background:#EAF5FF;border-color:#A8D2F3}
+.dash-assist{grid-column:2;grid-row:3;min-width:0;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:20px;padding:22px;align-self:start}
+.assist-header{border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:11px}
+.assist-header .kicker{margin:0 0 7px;display:block;font-size:10px}
+.assist-header h3{font-size:21px;letter-spacing:-.4px;margin:0 0 5px}
+.assist-header p{color:var(--muted);font-size:12px;margin:0}
+.quick-action{border:0;border-radius:11px;padding:11px 4px;width:100%;display:flex;gap:10px;align-items:center;text-align:left;background:white;color:#0F2D3D}
+.quick-action:hover{background:#F2FAF7}
+.quick-icon{background:#E6F9F3;color:#08966E;width:33px;height:33px;border-radius:10px;display:grid;place-items:center;font-size:18px;flex:0 0 33px}
+.quick-action>span:nth-child(2){flex:1;min-width:0}
+.quick-action strong{display:block;font-size:12px;line-height:1.3}
+.quick-action small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+.quick-arrow{color:#9AAEB4;font-size:23px}
+.quick-summary{background:linear-gradient(135deg,#E6F9F3,#F2FBFF);border-radius:14px;padding:17px;margin-top:14px;display:grid;gap:6px}
+.quick-summary span{color:#437B73;font-size:11px}
+.quick-summary strong{font-size:24px;letter-spacing:-.6px;color:#0F2D3D}
+.paytable th{background:#F6FAFB}
+.paidstatus{color:#059E74}
+.foot{padding-top:11px}
+@media(max-width:1399px){
+ .dashboard-content{display:block;max-width:1180px}
+ .dashboard-content>.metrics{margin-bottom:18px}
+ .dashboard-content>#calendarSection{margin-bottom:15px}
+ .dash-assist{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:15px 0;align-items:center}
+ .assist-header{grid-column:1/-1;margin:0 0 4px}
+ .quick-summary{grid-column:1/-1;margin-top:9px}
+}
+@media(max-width:1050px){
+ .desktop-sidebar{display:none}
+ .dashboard-shell{display:block}
+ .dashboard-content{padding:22px 25px}
+ .auth-layout{padding-top:25px}
+}
+@media(max-width:767px){
+ .page{padding:0 0 calc(14px + env(safe-area-inset-bottom))}
+ .topbar{height:74px;padding:0 13px}
+ .brand-symbol{width:42px;height:42px;flex-basis:42px}
+ .brand-symbol svg{width:40px;height:40px}
+ .brandname{font-size:21px}
+ .brandhint{font-size:10px;white-space:normal;line-height:1.2;max-width:210px}
+ .auth-layout{padding:15px 12px}
+ .auth-story{padding:11px 4px 15px}
+ .auth-story h1{font-size:29px}
+ .auth-card{padding:18px}
+ .dashboard-content{padding:15px 12px 91px;display:block}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:13px!important}
+ .metrics .metric:last-child{grid-column:auto;min-height:102px}
+ .metric{min-height:102px;padding:14px;border-radius:15px}
+ .metric strong{font-size:22px}
+ .metric .metric-label{font-size:11px}
+ .hero h1{font-size:27px}
+ #calendarSection{padding:17px;margin-bottom:14px!important}
+ .weektable tbody tr.todayrow{border-color:#7CDDBD;box-shadow:0 0 0 1px #7CDDBD}
+ .weektable .todayrow .daycell strong{color:#078864}
+ .slot.busy{background:#EAF5FF}
+ .mobile-nav{border-top-color:#D7EBE4}
+ .mobile-nav button:first-child{color:#078E6A}
+ .mobile-nav button:active{background:#E6F9F3}
+ .dash-assist{display:none!important}
+ .work-card,.pay-card,.settings-card{margin-top:14px}
+ .paytable tbody tr{background:#F8FCFB}
+}
+@media(max-width:420px){
+ .brandname{font-size:19px}
+ .brandhint{font-size:10px}
+ .metric strong{font-size:20px}
+}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="page">
  <header class="topbar" aria-label="По графику">
-  <div class="brand"><div class="brandmark" aria-hidden="true">ПГ</div><div><div class="brandname">По графику</div><span class="brandhint">Сервис учёта смен и выплат</span></div></div>
+  <div class="brand"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 52 52" width="42" height="42" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="9" width="34" height="34" rx="8" fill="#0F2D3D"/><rect x="7" y="16" width="34" height="7" fill="#22C998"/><path d="M16 7v7M33 7v7" stroke="#22C998" stroke-width="5" stroke-linecap="round"/><rect x="14" y="27" width="6" height="6" rx="1.5" fill="#22C998"/><rect x="25" y="27" width="6" height="6" rx="1.5" fill="#22C998"/><rect x="14" y="36" width="6" height="5" rx="1.5" fill="#22C998"/><circle cx="36" cy="37" r="12" fill="#22C998" stroke="white" stroke-width="2"/><path d="m30.5 37 4 4 7-8" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="brandname">По графику</div><span class="brandhint">Смены и выплаты без лишних хлопот</span></div></div>
   <span class="topbadge">Версия 2.0 · Бета</span>
  </header>
  <div id="auth" class="auth-layout">
   <div class="auth-story">
-   <div class="kicker">Для владельцев небольших команд</div>
-   <h1>Смены под контролем.<br><em>Выплаты без путаницы.</em></h1>
-   <p class="muted">Создайте график работы, назначайте сотрудников и контролируйте начисления — в одном удобном сервисе.</p>
+   <div class="kicker">По графику · Для владельцев бизнеса</div>
+   <h1>Весь бизнес<br><em>под контролем.</em></h1>
+   <p class="muted">Смены и выплаты без лишних хлопот. Управляйте графиком, командой и начислениями в одном месте — без таблиц и путаницы.</p>
    <div class="benefits">
     <div class="benefit"><div class="benefit-icon">▦</div><div><b>Понятный график</b><small>Видно, кто работает, а где свободные места</small></div></div>
     <div class="benefit"><div class="benefit-icon">₽</div><div><b>Ставки и выплаты</b><small>Оплата за смену или отработанные часы</small></div></div>
-    <div class="benefit"><div class="benefit-icon">⌘</div><div><b>Несколько точек</b><small>У каждой компании собственные данные и настройки</small></div></div>
+    <div class="benefit"><div class="benefit-icon">⌂</div><div><b>Несколько точек</b><small>У каждой компании собственные данные и настройки</small></div></div>
    </div>
   </div>
   <section class="card auth-card" aria-label="Вход и регистрация"><div id="emailSignup"><h2>Аккаунт владельца</h2><p class="formnote">Одна почта для всех ваших точек.</p><label for="ownerEmail">Электронная почта</label><input id="ownerEmail" type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false"><label for="accountPassword">Пароль аккаунта (от 10 символов)</label><div class="pass-wrap"><input id="accountPassword" type="password" autocomplete="new-password"><button type="button" onclick="togglePassword('accountPassword',this)">◉</button></div><button class="primary buttonwide" onclick="signupEmail()">Зарегистрировать владельца</button><p id="emailStatus" class="formnote"></p></div>
@@ -185,6 +341,25 @@ h3{font-size:17px}
  </div>
  <section class="card hide" id="pointPicker" style="margin-top:22px"><h2>Мои точки</h2><p class="muted">Управляйте всеми точками из одного аккаунта.</p><div id="pointsList" class="grid-form"></div><div class="work-actions"><button class="primary" onclick="showPointSetup()">+ Добавить точку</button><button onclick="accountLogout()">Выйти из аккаунта</button></div></section>
  <main id="app" class="dashboard hide">
+  <div class="dashboard-shell">
+   <aside class="desktop-sidebar" aria-label="Разделы приложения">
+    <div class="side-heading">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+    <div id="sidebarCompany" class="side-point"></div>
+    <nav class="side-nav" aria-label="Навигация">
+     <button class="nav-current" onclick="navTo('calendarSection')"><span class="side-icon">▦</span><span>График</span></button>
+     <button class="owner-only hide" onclick="navTo('editNames')"><span class="side-icon">♙</span><span>Сотрудники</span></button>
+     <button class="owner-only hide" onclick="navTo('paySection')"><span class="side-icon">₽</span><span>Начисления и выплаты</span></button>
+     <button class="owner-only hide" onclick="navTo('owner')"><span class="side-icon">⚙</span><span>Настройки</span></button>
+     <button id="sidePoints" class="hide" onclick="loadPoints()"><span class="side-icon">⌂</span><span>Мои точки</span></button>
+    </nav>
+    <div class="sidebar-promo">
+     <span class="promo-accent">✓</span>
+     <strong>Меньше рутины — больше контроля</strong>
+     <p>График, команда и выплаты всегда под рукой.</p>
+    </div>
+    <div class="side-bottom">По графику · Версия 2.0</div>
+   </aside>
+   <div class="dashboard-content">
   <div class="hero">
    <div><p class="kicker">Рабочая панель · По графику</p><h1 id="company"></h1><p id="summary" class="subtitle"></p></div>
    <div class="hero-actions"><button id="backPoints" class="hide" onclick="loadPoints()">← Мои точки</button>
@@ -208,6 +383,13 @@ h3{font-size:17px}
    <div class="table-hint"><span><i class="legenddot"></i>Свободно</span><span><i class="legenddot busy-dot"></i>Назначено</span><span><i class="legenddot off-dot"></i>Выходной</span></div>
    <p id="status" role="status"></p>
   </section>
+  <aside class="dash-assist owner-only hide" aria-label="Быстрые действия">
+   <div class="assist-header"><span class="kicker">УПРАВЛЕНИЕ ТОЧКОЙ</span><h3>Всё под рукой</h3><p>Основные действия владельца</p></div>
+   <button class="quick-action" onclick="navTo('calendarSection')"><span class="quick-icon">▦</span><span><strong>График смен</strong><small>Назначить сотрудника</small></span><span class="quick-arrow">›</span></button>
+   <button class="quick-action" onclick="navTo('editNames')"><span class="quick-icon">♙</span><span><strong>Сотрудники</strong><small>Изменить состав команды</small></span><span class="quick-arrow">›</span></button>
+   <button class="quick-action" onclick="navTo('paySection')"><span class="quick-icon">₽</span><span><strong>Выплаты</strong><small>Отметить расчёты за неделю</small></span><span class="quick-arrow">›</span></button>
+   <div class="quick-summary"><span>Начисления за неделю</span><strong id="quickOwed">—</strong><span id="quickSlots">Нет назначений</span></div>
+  </aside>
   <section id="assignment" class="card work-card hide">
    <div class="card-header"><div><h2>Назначить сотрудника</h2><p>Выберите сотрудника, ставку и часы работы</p></div><button onclick="document.getElementById('assignment').classList.add('hide')">Закрыть ×</button></div>
    <div class="grid-form">
@@ -245,7 +427,8 @@ h3{font-size:17px}
    </div>
   </section>
   <nav id="mobileNav" class="mobile-nav hide" aria-label="Разделы"><button onclick="mobileJump('calendarSection')"><span class="nav-icon">▦</span>График</button><button onclick="mobileJump('paySection')"><span class="nav-icon">₽</span>Выплаты</button><button onclick="mobileJump('owner')"><span class="nav-icon">⚙</span>Настройки</button></nav>
-  <footer class="foot">По графику · Смены, сотрудники и выплаты в одном месте</footer>
+  <footer class="foot">По графику · Смены и выплаты без лишних хлопот</footer>
+  </div></div>
  </main>
 </div><script>
 const API='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-v2',KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_',E=id=>document.getElementById(id);let token=sessionStorage.getItem('pvz2token')||'',s=null;
@@ -262,6 +445,17 @@ function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule
 function moveWeek(n){E('week').value=add(monday(E('week').value||iso(new Date())),7*n);draw()}
 function currentWeek(){E('week').value=monday(iso(new Date()));draw()}
 function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el.classList.contains('hide')){fill();el.scrollIntoView({behavior:'smooth',block:'start'})}}
+function navTo(id){
+ if(id==='owner'||id==='editNames'){
+  if(!s||s.role!=='owner')return;
+  if(E('owner').classList.contains('hide')){fill();E('owner').classList.remove('hide')}
+  const dest=id==='editNames'?E('editNames'):E('owner');
+  dest.scrollIntoView({behavior:'smooth',block:'start'});
+  return;
+ }
+ const el=E(id);
+ if(el&&!el.classList.contains('hide'))el.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function mobileJump(id){if(id==='owner'&&E('owner').classList.contains('hide'))toggleSettings();else if(E(id)&&!E(id).classList.contains('hide'))E(id).scrollIntoView({behavior:'smooth',block:'start'})}
 function chooseShift(date,position){E('assignment').classList.remove('hide');E('date').value=date;E('position').value=String(position);E('assignment').scrollIntoView({behavior:'smooth',block:'nearest'})}
 function draw(){
@@ -276,6 +470,11 @@ function draw(){
  E('company').textContent=s.name;
  E('summary').textContent=s.employees.length+' сотрудников · '+s.config.positions+' мест в смене · '+s.config.opens+'–'+s.config.closes;
  E('period').textContent=fmt(from)+' — '+fmt(to)+' · '+assigned.length+' назначений';
+ E('sidebarCompany').textContent=s.name;
+ E('sidePoints').classList.toggle('hide',E('backPoints').classList.contains('hide')||s.role!=='owner');
+ document.querySelectorAll('.owner-only').forEach(el=>el.classList.toggle('hide',s.role!=='owner'));
+ E('quickOwed').textContent=rub(owed);
+ E('quickSlots').textContent=free+' свободных мест на неделю';
  E('settingsBtn').classList.toggle('hide',s.role!=='owner');
  E('paySection').classList.toggle('hide',s.role!=='owner');
  E('mobileNav').classList.toggle('hide',s.role!=='owner');
@@ -288,9 +487,10 @@ function draw(){
  if(!E('start').value)E('start').value=s.config.opens;
  if(!E('end').value)E('end').value=s.config.closes;
  E('metrics').innerHTML=
-  '<div class="metric featured"><span class="metric-label">Занято смен</span><strong>'+assigned.length+'</strong><small>На выбранной неделе</small></div>'+
-  '<div class="metric"><span class="metric-label">Свободных мест</span><strong>'+free+'</strong><small>Можно назначить сотрудников</small></div>'+
-  (s.role==='owner'?'<div class="metric"><span class="metric-label">Начислено за неделю</span><strong>'+rub(owed)+'</strong><small>До подтверждения выплат</small></div>':'<div class="metric"><span class="metric-label">Сотрудников</span><strong>'+s.employees.length+'</strong><small>В вашей команде</small></div>');
+  '<div class="metric featured"><span class="metric-label">Назначено смен</span><strong>'+assigned.length+'</strong><small>На выбранной неделе</small></div>'+
+  '<div class="metric"><span class="metric-label">Свободных мест</span><strong>'+free+'</strong><small>Готовы к назначению</small></div>'+
+  (s.role==='owner'?'<div class="metric"><span class="metric-label">Начислено за неделю</span><strong>'+rub(owed)+'</strong><small>По запланированным сменам</small></div>':'<div class="metric"><span class="metric-label">Рабочих дней</span><strong>'+active.length+'</strong><small>На выбранной неделе</small></div>')+
+  '<div class="metric"><span class="metric-label">Сотрудников</span><strong>'+s.employees.length+'</strong><small>В команде</small></div>';
  const header='<thead><tr><th>Дата</th>'+Array.from({length:s.config.positions},(_,i)=>'<th>Смена №'+(i+1)+'</th>').join('')+'</tr></thead>';
  const rows=workdays.map(x=>{
   const d=x.date,weekend=x.dow>=5,open=x.open;
