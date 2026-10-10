@@ -98,7 +98,10 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 const DEFAULT_EMPLOYEES=["Ирина","Чернышёва Анна","Владимирова Татьяна","Ксения","Погодин Кирилл","Злата"];
 const DEFAULT_RATES={full:3000,late:1500,hourly:200,repack:300};
 let employees=[...DEFAULT_EMPLOYEES],rates={...DEFAULT_RATES};
-const API_URL='https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-sync';
+const API_URLS=[
+ 'https://vyavhynnybsinkiievbu.functions.supabase.co/pvz-sync',
+ 'https://vyavhynnybsinkiievbu.supabase.co/functions/v1/pvz-sync'
+];
 const API_KEY='sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_';
 const GRAPH_START='2026-09-28',GRAPH_END='2027-01-03';
 const labels={hourly:'Почасовой выход',repack:'Переупаковка'};
@@ -117,7 +120,12 @@ function clone(v){return JSON.parse(JSON.stringify(v))}
 function setSyncStatus(text,error=false){const el=document.getElementById('syncStatus');el.textContent=text;el.classList.toggle('error',error)}
 async function api(action,payload={},token=session?.token||''){
  const headers={'Content-Type':'application/json','apikey':API_KEY};if(token)headers.Authorization='Bearer '+token;
- let response;try{response=await fetch(API_URL,{method:'POST',headers,body:JSON.stringify({action,...payload})})}catch(e){throw new Error('Нет связи с облачной базой')}
+ const body=JSON.stringify({action,...payload});let response;
+ for(const url of API_URLS){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  try{response=await fetch(url,{method:'POST',headers,body,signal:controller.signal});break}catch(e){}finally{clearTimeout(timer)}
+ }
+ if(!response)throw new Error('Нет связи с облачной базой. Проверьте интернет и повторите вход.');
  let result={};try{result=await response.json()}catch(e){}
  if(!response.ok)throw new Error(result.error||'Ошибка облачной базы');return result;
 }
