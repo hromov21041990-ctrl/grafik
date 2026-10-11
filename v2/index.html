@@ -345,7 +345,8 @@ body.help-open{overflow:hidden}
  .help-span{grid-column:1}
  .help-bottom{align-items:stretch}
  .help-bottom button{width:100%}
-}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
+}.job-rows,.job-mapping{display:grid;gap:9px}.job-entry{display:grid;grid-template-columns:minmax(130px,2fr) minmax(100px,1fr) minmax(100px,1fr) 40px;gap:9px;align-items:center}.job-entry button{padding:8px}.job-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.mapping-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1fr);align-items:center;gap:12px;border-bottom:1px solid #e4ecea;padding:7px 0}.mapping-row span{overflow-wrap:anywhere}.job-shift-tag{display:block;font-size:11px;color:#476f80;font-weight:700}@media(max-width:600px){.job-entry{grid-template-columns:1fr 1fr 40px}.job-entry .job-name{grid-column:1/-1}.mapping-row{grid-template-columns:1fr}}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="page">
  <header class="topbar" aria-label="По графику">
@@ -459,11 +460,11 @@ body.help-open{overflow:hidden}
     <div class="formfield"><label for="date">Дата</label><input id="date" type="date"></div>
     <div class="formfield"><label for="position">Место</label><select id="position"></select></div>
     <div class="formfield"><label for="employee">Сотрудник</label><select id="employee"></select></div>
-    <div class="formfield"><label for="kind">Расчёт оплаты</label><select id="kind"><option value="shift">За смену</option><option value="hour">Почасовая ставка</option></select></div>
+    <div class="formfield"><label for="jobRole">Должность</label><select id="jobRole" onchange="showRoleRate()"></select></div><div class="formfield"><label for="kind">Расчёт оплаты</label><select id="kind"><option value="shift">За смену</option><option value="hour">Почасовая ставка</option></select></div>
     <div class="formfield"><label for="start">Начало</label><input id="start" type="time"></div>
     <div class="formfield"><label for="end">Окончание</label><input id="end" type="time"></div>
    </div>
-   <div class="work-actions"><button class="primary" onclick="assign()">Сохранить назначение</button><button onclick="document.getElementById('assignment').classList.add('hide')">Отмена</button></div>
+   <p id="roleRatePreview" class="formnote"></p><div class="work-actions"><button class="primary" onclick="assign()">Сохранить назначение</button><button onclick="document.getElementById('assignment').classList.add('hide')">Отмена</button></div>
   </section>
   <section id="paySection" class="card pay-card hide">
    <div class="card-header"><div><h2>Еженедельные выплаты</h2><p>Начисления по назначенным сменам выбранной недели</p></div></div>
@@ -479,7 +480,9 @@ body.help-open{overflow:hidden}
     <div class="formfield"><label for="editShift">Ставка за смену, ₽</label><input id="editShift" type="number" min="1"></div>
     <div class="formfield"><label for="editHour">Ставка за час, ₽</label><input id="editHour" type="number" min="1"></div>
     <div class="formfield wide"><label>Рабочие дни</label><div id="editDays" class="day-checks"></div></div>
-    <div class="formfield wide"><label for="editNames">Сотрудники (каждое имя с новой строки)</label><textarea id="editNames" rows="4"></textarea></div>
+    <div class="formfield wide"><label for="editNames">Сотрудники (каждое имя с новой строки)</label><textarea id="editNames" rows="4" oninput="renderEmployeeRoleMapping()"></textarea></div>
+<div class="formfield wide"><div class="job-head"><label for="editJobRoles">Должности и ставки</label><button type="button" onclick="addJobRoleRow()">+ Добавить должность</button></div><p class="formnote">Должности не заданы заранее. Укажите название, ставку за смену и за час. Можно назначить каждому сотруднику должность по умолчанию.</p><div id="editJobRoles" class="job-rows"></div></div>
+<div class="formfield wide"><label>Должность сотрудника по умолчанию</label><div id="editEmployeeRoles" class="job-mapping"></div><p class="formnote">При назначении смены владелец может выбрать другую должность. Ставка берётся из выбранной должности и сохраняется в смене.</p></div>
    </div>
    <div class="work-actions"><button class="primary" onclick="settings()">Сохранить настройки</button><button onclick="toggleSettings()">Отмена</button></div>
    <div class="security-box"><h3>Безопасность и доступ</h3><p class="formnote">Здесь владелец может менять пароли и создавать новый резервный код. Новый код отменяет предыдущий.</p>
@@ -528,10 +531,10 @@ const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.ge
 const days=id=>[...E(id).querySelectorAll('input:checked')].map(x=>+x.value),dayUI=(id,checked)=>E(id).innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((x,i)=>'<label style="display:inline-block"><input type="checkbox" value="'+i+'" '+(checked.includes(i)?'checked':'')+'>'+x+'</label> ').join(''),list=id=>E(id).value.split('\n').map(x=>x.trim()).filter(Boolean);
 function mode(b){E('recoveryForm').classList.add('hide');E('recoveryResult').classList.add('hide');E('reg').classList.toggle('hide',b);E('signin').classList.toggle('hide',!b);E('regTab').classList.toggle('is-active',!b);E('signinTab').classList.toggle('is-active',b);E('error').textContent=''}function namesFill(){let old=list('names'),n=Math.min(50,Math.max(1,+E('count').value||1));E('names').value=Array.from({length:n},(_,i)=>old[i]||'Сотрудник '+(i+1)).join('\n')}
 async function api(action,p={}){let r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...p})});let v=await r.json();if(!r.ok)throw Error(v.error||'Ошибка сервера');return v}
-async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});enter(r);if(r.recoveryCode){showCode('ownerRecoveryResult',r.recoveryCode);E('owner').classList.remove('hide');E('owner').scrollIntoView({behavior:'smooth',block:'start'})}}catch(e){E('error').textContent=e.message}}
+async function register(){try{let r=await api('register',{name:E('name').value,code:E('code').value.trim().toLowerCase(),ownerPassword:E('ownerPass').value,staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value},jobRoles:[],employeeRoles:{}});enter(r);if(r.recoveryCode){showCode('ownerRecoveryResult',r.recoveryCode);E('owner').classList.remove('hide');E('owner').scrollIntoView({behavior:'smooth',block:'start'})}}catch(e){E('error').textContent=e.message}}
 async function login(){try{enter(await api('login',{code:E('signinCode').value.trim().toLowerCase(),role:E('role').value,password:E('pass').value}))}catch(e){E('error').textContent=e.message}}
 function enter(r){token=r.token||token;sessionStorage.setItem('pvz2token',token);s=normalize(r.company);E('auth').classList.add('hide');E('app').classList.remove('hide');document.body.classList.add('beta-in-app');E('week').value=monday(iso(new Date()));E('date').value=iso(new Date());fill();E('owner').classList.add('hide');E('assignment').classList.add('hide');draw();syncLabel('Синхронизировано · '+syncClock(),'ok')}
-function fill(){editVersion=s.version;E('editName').value=s.name;E('editPositions').value=s.config.positions;E('editOpens').value=s.config.opens;E('editCloses').value=s.config.closes;E('editShift').value=s.rates.shift;E('editHour').value=s.rates.hour;E('editNames').value=s.employees.join('\n');dayUI('editDays',s.config.days)}
+function fill(){editVersion=s.version;E('editName').value=s.name;E('editPositions').value=s.config.positions;E('editOpens').value=s.config.opens;E('editCloses').value=s.config.closes;E('editShift').value=s.rates.shift;E('editHour').value=s.rates.hour;E('editNames').value=s.employees.join('\n');renderJobRoles();dayUI('editDays',s.config.days)}
 function syncClock(){return new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
 function syncLabel(message,state='ok'){
  E('syncState').textContent=message;
@@ -562,7 +565,7 @@ setInterval(()=>{if(s&&token&&!document.hidden)syncNow(false)},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow(false)});
 window.addEventListener('focus',()=>syncNow(false));
 window.addEventListener('online',()=>syncNow(true));
-function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule:[],payments:v.payments&&typeof v.payments==='object'?v.payments:{}}}
+function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule:[],payments:v.payments&&typeof v.payments==='object'?v.payments:{},jobRoles:Array.isArray(v.jobRoles)?v.jobRoles:[],employeeRoles:v.employeeRoles&&typeof v.employeeRoles==='object'?v.employeeRoles:{}}}
 function moveWeek(n){E('week').value=add(monday(E('week').value||iso(new Date())),7*n);draw()}
 function currentWeek(){E('week').value=monday(iso(new Date()));draw()}
 function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el.classList.contains('hide')){fill();el.scrollIntoView({behavior:'smooth',block:'start'})}}
@@ -578,7 +581,71 @@ function navTo(id){
  if(el&&!el.classList.contains('hide'))el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function mobileJump(id){if(id==='owner'&&E('owner').classList.contains('hide'))toggleSettings();else if(E(id)&&!E(id).classList.contains('hide'))E(id).scrollIntoView({behavior:'smooth',block:'start'})}
-function chooseShift(date,position){E('assignment').classList.remove('hide');E('date').value=date;E('position').value=String(position);E('assignment').scrollIntoView({behavior:'smooth',block:'nearest'})}
+
+function roleListFromForm(){
+ return [...E('editJobRoles').querySelectorAll('.job-entry')].map(el=>({id:el.dataset.id,name:el.querySelector('.job-name').value.trim(),shift:Number(el.querySelector('.job-shift').value),hour:Number(el.querySelector('.job-hour').value)}));
+}
+function addJobRoleRow(role){
+ const r=role||{id:'job-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),name:'',shift:'',hour:''};
+ const wrap=document.createElement('div');wrap.className='job-entry';wrap.dataset.id=r.id;
+ wrap.innerHTML='<input class="job-name" maxlength="80" placeholder="Название должности" aria-label="Название должности">'+
+ '<input class="job-shift" type="number" min="1" max="1000000" step="0.01" placeholder="₽ / смена" aria-label="Ставка за смену">'+
+ '<input class="job-hour" type="number" min="1" max="1000000" step="0.01" placeholder="₽ / час" aria-label="Ставка за час">'+
+ '<button type="button" title="Удалить должность">×</button>';
+ wrap.querySelector('.job-name').value=r.name;
+ wrap.querySelector('.job-shift').value=r.shift;
+ wrap.querySelector('.job-hour').value=r.hour;
+ wrap.querySelector('button').onclick=()=>{wrap.remove();renderEmployeeRoleMapping()};
+ wrap.querySelectorAll('input').forEach(el=>el.addEventListener('input',()=>renderEmployeeRoleMapping()));
+ E('editJobRoles').appendChild(wrap);
+ renderEmployeeRoleMapping();
+}
+function renderJobRoles(){
+ E('editJobRoles').innerHTML='';
+ (s.jobRoles||[]).forEach(r=>addJobRoleRow(r));
+ renderEmployeeRoleMapping(true);
+}
+function renderEmployeeRoleMapping(reset=false){
+ const roles=roleListFromForm().filter(r=>r.name);
+ const container=E('editEmployeeRoles');
+ const selected=reset?{}:Object.fromEntries([...container.querySelectorAll('select')].map(x=>[x.dataset.name,x.value]));
+ const names=list('editNames');
+ container.innerHTML=names.map(n=>'<div class="mapping-row"><span>'+esc(n)+'</span><select data-name="'+esc(n)+'"><option value="">Без должности</option>'+
+ roles.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+'</option>').join('')+'</select></div>').join('');
+ container.querySelectorAll('select').forEach(el=>{
+  const roleId=selected[el.dataset.name]??s.employeeRoles[el.dataset.name]??'';
+  if([...el.options].some(o=>o.value===roleId))el.value=roleId;
+ });
+}
+function collectJobRoles(){
+ const roles=roleListFromForm(),names=list('editNames');
+ if(roles.some(r=>r.name.length<2||!Number.isFinite(r.shift)||r.shift<=0||!Number.isFinite(r.hour)||r.hour<=0))throw Error('Заполните название и обе ставки для каждой должности либо удалите пустую строку.');
+ if(new Set(roles.map(r=>r.name.toLocaleLowerCase('ru'))).size!==roles.length)throw Error('Названия должностей должны быть уникальными.');
+ if(names.length<1)throw Error('Добавьте хотя бы одного сотрудника.');
+ return roles;
+}
+function collectEmployeeRoles(){
+ return Object.fromEntries([...E('editEmployeeRoles').querySelectorAll('select')].filter(el=>el.value).map(el=>[el.dataset.name,el.value]));
+}
+function renderRoleSelect(){
+ if(!s)return;
+ const sel=E('jobRole'),old=sel.value,roles=s.jobRoles||[];
+ if(!roles.length){sel.innerHTML='<option value="">Должности ещё не добавлены</option>';sel.disabled=true;showRoleRate();return}
+ sel.disabled=false;
+ const who=s.employees[+E('employee').value]||s.employees[0];
+ const mapped=s.employeeRoles[who]||'';
+ const allowed=s.role==='owner'?roles:roles.filter(r=>r.id===mapped);
+ sel.innerHTML='<option value="">Выберите должность</option>'+allowed.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+'</option>').join('');
+ sel.value=allowed.some(r=>r.id===old)?old:(allowed.some(r=>r.id===mapped)?mapped:'');
+ showRoleRate();
+}
+function showRoleRate(){
+ if(!s)return;
+ const r=(s.jobRoles||[]).find(x=>x.id===E('jobRole').value);
+ E('roleRatePreview').textContent=r?(s.role==='owner'?'Ставки должности: '+rub(r.shift)+' за смену или '+rub(r.hour)+' за час.':'Должность: '+r.name):((s.jobRoles||[]).length?'Выберите должность.':'Владелец ещё не добавил должности. Для старых точек пока действует общая ставка.');
+}
+
+function chooseShift(date,position){E('assignment').classList.remove('hide');E('date').value=date;E('position').value=String(position);renderRoleSelect();E('assignment').scrollIntoView({behavior:'smooth',block:'nearest'})}
 function draw(){
  if(!s)return;
  const all=Array.isArray(s.schedule)?s.schedule:[];
@@ -603,7 +670,7 @@ function draw(){
  if(s.role!=='owner')E('owner').classList.add('hide');
  const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
- E('position').innerHTML=Array.from({length:s.config.positions},(_,i)=>'<option value="'+i+'">Место '+(i+1)+'</option>').join('');
+ E('position').innerHTML=Array.from({length:s.config.positions},(_,i)=>'<option value="'+i+'">Место '+(i+1)+'</option>').join('');renderRoleSelect();
  if(existingEmp&&E('employee').querySelector('option[value="'+existingEmp+'"]'))E('employee').value=existingEmp;
  if(existingPos&&E('position').querySelector('option[value="'+existingPos+'"]'))E('position').value=existingPos;
  if(!E('start').value)E('start').value=s.config.opens;
@@ -622,7 +689,7 @@ function draw(){
     if(!open)return '<td data-slot="Смена №'+(p+1)+'">Выходной</td>';
     const r=all.find(v=>v.date===d&&v.position===p);
     if(!r)return '<td data-slot="Смена №'+(p+1)+'"><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
-    return '<td data-slot="Смена №'+(p+1)+'"><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+
+    return '<td data-slot="Смена №'+(p+1)+'"><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+(r.jobRoleName?'<small class="job-shift-tag">'+esc(r.jobRoleName)+'</small>':'')+
       '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+'</div>'+
       (s.role==='owner'?'<span class="shift-pay">'+rub(r.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
       '</div></td>';
@@ -657,9 +724,9 @@ async function mutate(action,p){
   if(needSync&&session===token)await syncNow(true);
  }
 }
-function assign(){mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,kind:E('kind').value,start:E('start').value,end:E('end').value})}
+function assign(){if(s.jobRoles.length&&!E('jobRole').value){E('status').textContent='Выберите должность для смены';return}mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,jobRoleId:E('jobRole').value,kind:E('kind').value,start:E('start').value,end:E('end').value})}
 function removeShift(id){if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
-function settings(){if(editVersion!==s.version){E('status').textContent='За время редактирования данные точки изменились. Закройте и снова откройте настройки, чтобы не перезаписать чужие изменения.';E('status').scrollIntoView({behavior:'smooth',block:'nearest'});return}mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value}})}
+function settings(){if(editVersion!==s.version){E('status').textContent='За время редактирования данные точки изменились. Закройте и снова откройте настройки, чтобы не перезаписать чужие изменения.';E('status').scrollIntoView({behavior:'smooth',block:'nearest'});return}try{const roles=collectJobRoles(),mapping=collectEmployeeRoles();mutate('settings',{name:E('editName').value,employees:list('editNames'),config:{positions:+E('editPositions').value,opens:E('editOpens').value,closes:E('editCloses').value,days:days('editDays')},rates:{shift:+E('editShift').value,hour:+E('editHour').value},jobRoles:roles,employeeRoles:mapping})}catch(e){E('status').textContent=e.message}}
 function paid(n){mutate('paid',{week:monday(E('week').value),employee:decodeURIComponent(n)})}
 function logout(){let old=token;token='';sessionStorage.removeItem('pvz2token');s=null;E('app').classList.add('hide');document.body.classList.remove('beta-in-app','has-mobile-help-nav');E('auth').classList.remove('hide');mode(true);if(old)fetch(API,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+old},body:JSON.stringify({action:'logout'})}).catch(()=>{})}
 function togglePassword(id,btn){const x=E(id),shown=x.type==='password';x.type=shown?'text':'password';btn.textContent=shown?'◌':'◉';btn.setAttribute('aria-label',shown?'Скрыть пароль':'Показать пароль')}
@@ -679,7 +746,7 @@ async function loadPoints(){try{const q=await emailCall('emailPoints');E('auth')
 async function enterPoint(id){try{const q=await emailCall('emailEnter',{pointId:id});enter(q);E('pointPicker').classList.add('hide');E('backPoints').classList.remove('hide')}catch(e){alert(e.message)}}
 function showPointSetup(){addingPoint=true;E('pointPicker').classList.add('hide');E('auth').classList.remove('hide');E('emailSignup').classList.add('hide');E('reg').classList.remove('hide');E('signin').classList.add('hide')}
 async function accountLogout(){if(sb)await sb.auth.signOut();token='';s=null;sessionStorage.removeItem('pvz2token');E('pointPicker').classList.add('hide');E('app').classList.add('hide');document.body.classList.remove('beta-in-app','has-mobile-help-nav');E('auth').classList.remove('hide');addingPoint=false;mode(true)}
-async function register(){try{const q=await emailCall('emailCreate',{name:E('name').value,code:E('code').value.trim().toLowerCase(),staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value}});addingPoint=false;await enterPoint(q.point.id)}catch(e){E('error').textContent=e.message}}
+async function register(){try{const q=await emailCall('emailCreate',{name:E('name').value,code:E('code').value.trim().toLowerCase(),staffPassword:E('staffPass').value,employees:list('names'),config:{positions:+E('positions').value,opens:E('opens').value,closes:E('closes').value,days:days('days')},rates:{shift:+E('shift').value,hour:+E('hour').value},jobRoles:[],employeeRoles:{}});addingPoint=false;await enterPoint(q.point.id)}catch(e){E('error').textContent=e.message}}
 function authErrorText(e){const code=String(e?.code||''),message=String(e?.message||'Ошибка авторизации');
  if(code==='invalid_credentials'||/Invalid login credentials/i.test(message))return 'Неверный email или пароль. Проверьте сохранённый пароль в «Паролях» телефона или восстановите доступ по email.';
  if(code==='email_not_confirmed'||/Email not confirmed/i.test(message))return 'Сначала подтвердите email по ссылке из письма.';
@@ -813,6 +880,7 @@ async function sendSupportTicket(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!E('helpOverlay').classList.contains('hide'))closeHelp()});
 
+E('employee').addEventListener('change',renderRoleSelect);E('kind').addEventListener('change',showRoleRate);
 initAuthRecovery();
 dayUI('days',[0,1,2,3,4,5,6]);namesFill();mode(false);E('role').onchange=()=>mode(true);
 if(sb)sb.auth.getSession().then(({data,error})=>{
