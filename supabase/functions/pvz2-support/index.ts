@@ -4,7 +4,7 @@ const url=Deno.env.get("SUPABASE_URL")||"";
 const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const db=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
 const publishable="sb_publishable_eIWwXJEBGxYAbnhOc-MKfw_NitfQtB_";
-const origins=new Set(["https://hromov21041990-ctrl.github.io","https://grafik.hromov-aa.chatgpt.site"]);
+const origins=new Set(["https://hromov21041990-ctrl.github.io","https://grafik.hromov-aa.chatgpt.site","https://po-grafiku.ru"]);
 function reply(origin:string,status:number,result:Record<string,unknown>){
  return new Response(JSON.stringify(result),{status,headers:{"content-type":"application/json; charset=utf-8","access-control-allow-origin":origin,"access-control-allow-headers":"authorization,apikey,content-type","access-control-allow-methods":"POST,OPTIONS","cache-control":"no-store"}});
 }
