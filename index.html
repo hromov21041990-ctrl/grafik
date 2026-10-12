@@ -67,6 +67,138 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 #adminSummary .report td:last-child,#adminSummary .report th:last-child{background:#f6fbf7}
 @media(max-width:700px){.wrap{padding:12px}h1{font-size:22px}.header{display:block}.controls{margin-top:12px}}
 @media(max-width:760px){.settings-grid{grid-template-columns:1fr}.employee-add{flex-direction:column}.rate-grid{grid-template-columns:1fr 120px}}
+
+/* Mobile app layout: daily accordion schedule, payroll cards, bottom navigation */
+.mobile-calendar{display:none}
+.mobile-bottom-nav{display:none}
+@media(max-width:820px){
+ :root{--bg:#f4f5f8}
+ html{scroll-padding-top:12px}
+ body{overflow-x:hidden;min-width:0}
+ .wrap{padding:16px 12px 95px}
+ .header{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+ .header h1{font-size:23px;line-height:1.17;letter-spacing:-.5px}
+ .header .sub{font-size:12px;line-height:1.5}
+ .sync-controls{gap:3px;margin-top:4px}
+ .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+ .stat{min-width:0;padding:12px;border-radius:13px;background:#fff;font-size:12px;line-height:1.5}
+ .stat b{font-size:16px}
+ button,select{min-height:43px}
+ input,select,textarea{font-size:16px}
+ .card{border-radius:17px}
+ .controls{margin-top:0!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:14px;gap:10px;align-items:stretch}
+ .controls label{min-width:0;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#586172}
+ .controls label select{min-width:0;width:100%;max-width:100%;font-size:14px}
+ .controls>button{font-size:12px;padding:10px 7px;line-height:1.3}
+ .controls>button:first-of-type{grid-column:1/-1;order:3;border:1px dashed #efd8db;color:#9e4655;background:#fffafb}
+ .controls>#adminBtn{grid-column:1/-1;order:0;background:#eeebff;color:#5341b5;font-weight:700;border-color:#d8d2ff}
+ .controls>button:last-of-type{display:none}
+ .table-wrap{margin-top:12px;overflow:visible;padding:12px}
+ #calendar{display:none}
+ .mobile-calendar{display:block}
+ .mobile-day{border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:9px;overflow:hidden}
+ .mobile-day:last-child{margin-bottom:0}
+ .mobile-day[open]{border-color:#d7d1ff;box-shadow:0 4px 15px rgba(62,53,146,.08)}
+ .mobile-day.weekend{border-left:4px solid #e8a4a4;background:#fff!important}
+ .mobile-day.weekend>summary{background:#fff9f9}
+ .mobile-day summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px;min-height:69px;user-select:none;-webkit-tap-highlight-color:transparent}
+ .mobile-day summary::-webkit-details-marker{display:none}
+ .mobile-dateblock{display:flex;flex-direction:column;gap:2px;min-width:82px;flex:0 0 82px}
+ .mobile-dateblock strong{font-size:15px;color:#2c2d39}
+ .mobile-dateblock small{font-size:11px;color:#727784}
+ .mobile-day-overview{flex:1;min-width:0;font-size:11px;color:#686e7d;line-height:1.45}
+ .mobile-day-overview b{display:block;color:#4d43a8;font-size:12px}
+ .mobile-chevron{flex:0 0 22px;text-align:right;color:#6d5dfc;font-size:22px;transition:transform .2s}
+ .mobile-day[open] .mobile-chevron{transform:rotate(90deg)}
+ .mobile-day-body{border-top:1px solid var(--line);padding:12px;display:grid;gap:12px}
+ .mobile-shift-heading{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#7a7d86;margin:0 0 5px}
+ .mobile-day .shift{padding:11px;border-radius:12px;margin-bottom:0}
+ .mobile-day .shift .top{font-size:13px}
+ .mobile-day .shift b{font-size:14px}
+ .mobile-day .shift small{font-size:12px}
+ .mobile-day .shift button{min-height:39px;font-size:13px;margin-top:8px}
+ .mobile-hour-entry{margin-bottom:8px!important}
+ .mobile-extra-btn{width:100%;min-height:42px;color:#594bd1;border-color:#cac4ff;font-weight:700}
+ .mobile-empty{color:#9a9da6;font-size:12px;margin-bottom:7px}
+ .legend{padding:12px 3px 4px;gap:10px;font-size:11px}
+ .legend>span:last-child{display:none}
+ #adminPanel{margin:10px 12px 104px!important;padding:16px!important;max-width:none!important}
+ #adminPanel h2{font-size:23px}
+ #adminPanel h3{font-size:18px;margin:20px 0 8px}
+ #adminPanel>.admin-inner>p{font-size:12px;line-height:1.5}
+ .admin-inner{min-width:0}
+ .settings-grid{grid-template-columns:1fr;gap:10px}
+ .settings-box{padding:13px;border-radius:14px}
+ .employee-add{flex-direction:column;gap:7px}
+ .rate-grid{grid-template-columns:minmax(0,1fr) 110px;gap:7px}
+ .rate-grid input{width:100%;min-width:0}
+ .employee-row>span{min-width:0;overflow-wrap:anywhere}
+ .salary-control-bar{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:12px 0!important}
+ .salary-control-bar label{display:flex;flex-direction:column;gap:5px;font-size:12px}
+ .salary-control-bar select{width:100%;min-width:0}
+ .salary-control-bar button{font-size:13px}
+ #adminSummary{overflow:visible!important}
+ #adminSummary .fine-note{line-height:1.55;font-size:12px}
+ #adminSummary table.report,#adminRecords table.report{display:block;width:100%;min-width:0!important;border:0}
+ #adminSummary .report thead,#adminRecords .report tr:first-child{display:none}
+ #adminSummary .report tbody,#adminRecords .report tbody{display:block}
+ #adminSummary .report tbody tr:not(.fine-summary),#adminRecords .report tr:not(:first-child){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;margin:0 0 11px;background:#fff;border:1px solid #e4e6ed;border-radius:15px;box-shadow:0 3px 14px rgba(20,22,40,.04)}
+ #adminSummary .report td,#adminRecords .report td{display:block;min-width:0;padding:0;border:0!important;overflow-wrap:anywhere;font-size:14px;background:none!important}
+ #adminSummary .report tr:not(.fine-summary) td:before,#adminRecords .report tr:not(:first-child) td:before{display:block;font-size:10px;color:#7d8390;letter-spacing:.2px;margin-bottom:4px;font-weight:650}
+ #adminSummary .report tr:not(.fine-summary) td:first-child{grid-column:1/-1;font-size:17px;font-weight:800;border-bottom:1px solid #ececf3!important;padding-bottom:9px!important}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(2):before{content:"Полных смен"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(3):before{content:"Вторых смен"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(4):before{content:"Почасовых часов"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(5):before{content:"Переупаковка, ч"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(6):before{content:"Всего часов"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(7):before{content:"Начислено"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(8):before{content:"Штраф / возврат, ₽"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(9):before{content:"К выплате"}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(9){font-weight:800;font-size:17px}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(10){grid-column:1/-1;padding-top:8px!important;border-top:1px solid #ededf4!important}
+ #adminSummary .report tr:not(.fine-summary) td:nth-child(10):before{content:"Выплата"}
+ #adminSummary .fine-input{max-width:none;min-width:0;width:100%;height:44px}
+ #adminSummary .salary-paycell{min-width:0!important}
+ #adminSummary .salary-pay-btn{min-height:42px}
+ #adminSummary .fine-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:15px;margin:12px 0;background:#efebff;border:1px solid #ddd5ff;border-radius:15px}
+ #adminSummary .fine-summary td:first-child{grid-column:1/-1;font-size:16px;font-weight:800}
+ #adminSummary .fine-summary td:nth-child(2):before{content:"Начислено";display:block;font-size:11px;color:#6c6891;margin-bottom:5px}
+ #adminSummary .fine-summary td:nth-child(3):before{content:"Штрафы";display:block;font-size:11px;color:#6c6891;margin-bottom:5px}
+ #adminSummary .fine-summary td:nth-child(4):before{content:"К выплате";display:block;font-size:11px;color:#6c6891;margin-bottom:5px}
+ #adminSummary .fine-summary td:last-child{display:none}
+ #adminRecords{overflow:visible!important}
+ #adminRecords>p{font-weight:750;font-size:14px}
+ #adminRecords .report tr:not(:first-child) td:first-child{grid-column:1/-1;font-weight:800}
+ #adminRecords .report tr:not(:first-child) td:nth-child(2):before{content:"Работа"}
+ #adminRecords .report tr:not(:first-child) td:nth-child(3):before{content:"Часы"}
+ #adminRecords .report tr:not(:first-child) td:nth-child(4):before{content:"Сумма"}
+ #adminRecords .report tr:not(:first-child) td:nth-child(5){grid-column:1/-1}
+ #adminRecords .report tr:not(:first-child) td:nth-child(5):before{content:"Действия"}
+ #adminRecords .report tr:not(:first-child) td:nth-child(5) button{min-height:40px;margin:4px 6px 4px 0}
+ .modal{z-index:80;align-items:flex-end;padding:0}
+ .dialog{max-width:none!important;width:100%;border-radius:19px 19px 0 0;padding:20px 16px calc(21px + env(safe-area-inset-bottom));max-height:88dvh;overflow:auto}
+ .dialog .formrow{gap:9px}
+ .dialog .actions button{min-height:45px;flex:1}
+ .toast{bottom:calc(77px + env(safe-area-inset-bottom));width:calc(100% - 24px)}
+ .mobile-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:35;background:rgba(255,255,255,.98);border-top:1px solid #dfdfec;box-shadow:0 -7px 20px rgba(20,20,40,.05);padding:5px 8px calc(6px + env(safe-area-inset-bottom));align-items:stretch;justify-content:space-around;gap:6px}
+ .mobile-bottom-nav button{flex:1;min-width:0;border:0;border-radius:11px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;gap:3px;padding:5px 0;min-height:54px;color:#555c72}
+ .mobile-bottom-nav button span{font-size:21px;line-height:1.1;color:#6554e1}
+ .mobile-bottom-nav button:active{background:#efebff}
+ .mobile-bottom-nav button.mobile-active{background:#eeebff;color:#5746cf;font-weight:800}
+ #login{padding:16px!important;overflow:auto;align-items:center!important}
+ #login>.card{padding:23px!important;border-radius:18px}
+ #login .field{margin:0 0 15px}
+ #login .field input,#login .field select{min-height:48px}
+ #login button.primary{min-height:48px;font-size:16px}
+}
+@media(max-width:390px){
+ .controls{gap:7px;padding:10px}
+ .controls label select{font-size:13px}
+ .mobile-day-body{padding:10px}
+ .mobile-dateblock{min-width:75px;flex-basis:75px}
+ .mobile-day summary{padding:11px}
+ #adminPanel{padding:12px!important}
+}
 </style>
 </head>
 <body>
@@ -91,7 +223,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   </div>
 
   <div class="card table-wrap">
-    <table class="calendar" id="calendar"></table>
+    <table class="calendar" id="calendar"></table><div id="mobileCalendar" class="mobile-calendar" aria-label="График смен по дням"></div>
     <div class="legend">
       <span><i class="dot d1"></i>свободно</span>
       <span><i class="dot d2"></i>занято</span>
@@ -115,7 +247,12 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     <div class="actions"><button onclick="closeModal()">Отмена</button><button class="primary" onclick="saveHourly()">Записать</button></div>
   </div>
 </div>
-
+<nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Навигация на телефоне" style="display:none">
+ <button type="button" onclick="mobileNavigate('calendar')"><span>▦</span>График</button>
+ <button type="button" class="mobile-owner-only" onclick="mobileNavigate('salary')"><span>₽</span>Зарплата</button>
+ <button type="button" class="mobile-owner-only" onclick="mobileNavigate('settings')"><span>⚙</span>Настройки</button>
+ <button type="button" onclick="logout()"><span>↪</span>Выход</button>
+</nav>
 <script>
 const DEFAULT_EMPLOYEES=["Ирина","Чернышёва Анна","Владимирова Татьяна","Ксения","Погодин Кирилл","Злата"];
 const DEFAULT_RATES={full:3000,late:1500,hourly:200,repack:300};
