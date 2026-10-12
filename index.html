@@ -358,7 +358,13 @@ async function addEmployee(){if(!owner())return;const input=document.getElementB
 async function removeEmployee(encoded){if(!owner())return;const name=decodeURIComponent(encoded);if(employees.length<=1)return alert('Нельзя удалить последнего сотрудника.');if(!employees.includes(name))return;if(!confirm('Удалить '+name+' из списка назначения? Старые смены и выплаты сохранятся.'))return;await applySettings(employees.filter(n=>n!==name),rates)}
 async function updateRates(){if(!owner())return;const read=id=>Number(String(document.getElementById(id).value).replace(',','.')),next={full:read('rateFull'),late:read('rateLate'),hourly:read('rateHourly'),repack:read('rateRepack')};if(Object.values(next).some(v=>!Number.isFinite(v)||v<=0||v>1000000))return alert('Все ставки должны быть больше нуля.');if(!confirm('Сохранить новые ставки и пересчитать начисления за весь период?'))return;await applySettings(employees,next)}
 function fineFor(name,week=salaryWeek()){
- const stored=week==="all"?payments&&payments.__fines:payments&&payments.__weeklyFines;
+ if(week==="all"){
+  const legacy=Number(payments?.__fines?.[name]||0);
+  const fineWeeks=payments&&payments.__weeklyFines;
+  const weekly=plainObject(fineWeeks)?weekDefinitions().reduce((sum,w)=>{const val=Number(fineWeeks[w.from+"|"+name]||0);return sum+(Number.isFinite(val)?val:0)},0):0;
+  return num((Number.isFinite(legacy)?legacy:0)+weekly);
+ }
+ const stored=payments&&payments.__weeklyFines;
  if(!plainObject(stored)||!Object.prototype.hasOwnProperty.call(stored,week==="all"?name:week+"|"+name))return 0;
  const value=Number(stored[week==="all"?name:week+"|"+name]);
  return Number.isFinite(value)&&value>=-1000000&&value<=1000000?num(value):0;
@@ -398,7 +404,10 @@ function saveFine(input){
  if(rounded===fineFor(name))return;
  const week=salaryWeek(),field=week==="all"?"__fines":"__weeklyFines",key=week==="all"?name:week+"|"+name;
  const fines={...(plainObject(payments[field])?payments[field]:{})};
- if(rounded===0)delete fines[key];else fines[key]=rounded;
+ const weeks=payments&&payments.__weeklyFines;
+ const applied=week==="all"&&plainObject(weeks)?weekDefinitions().reduce((sum,w)=>sum+Number(weeks[w.from+"|"+name]||0),0):0;
+ const storedValue=week==="all"?num(rounded-applied):rounded;
+ if(storedValue===0)delete fines[key];else fines[key]=storedValue;
  payments={...payments,[field]:fines};
  try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}
  renderAdmin();
