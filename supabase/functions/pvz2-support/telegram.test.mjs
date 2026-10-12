@@ -33,7 +33,7 @@ test("sends one plain-text bounded message and requires confirmed chat/message",
     assert.equal(body.chat_id, secrets.chatId);
     assert.equal(body.parse_mode, undefined);
     assert.equal(body.link_preview_options.is_disabled, true);
-    assert.ok(Array.from(body.text).length <= 4096);
+    assert.ok(body.text.length <= 4096);
     assert.ok(body.text.includes(ticket.id));
     assert.ok(body.text.includes(ticket.title));
     return success();

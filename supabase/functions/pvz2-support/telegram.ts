@@ -30,10 +30,15 @@ export async function sendSupportNotification(
     `Создана: ${ticket.created_at}`,
     "", ticket.message,
   ].join("\n");
-  const chars = Array.from(text);
-  const message = chars.length > 3900
-    ? chars.slice(0, 3850).join("") + "\n… Полный текст сохранён в базе заявок."
-    : text;
+  let message = text;
+  if (text.length > 3900) {
+    let preview = "";
+    for (const char of text) {
+      if (preview.length + char.length > 3850) break;
+      preview += char;
+    }
+    message = preview + "\n… Полный текст сохранён в базе заявок.";
+  }
   try {
     const response = await fetcher(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
