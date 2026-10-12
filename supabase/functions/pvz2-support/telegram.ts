@@ -13,7 +13,9 @@ export async function sendSupportNotification(
   const fail = (error: string): DeliveryResult => ({ notifiedAt: null, error });
   const token = secrets.token?.trim();
   const chatId = secrets.chatId?.trim();
-  if (!token || !chatId) return fail("telegram_secrets_missing");
+  if (!token && !chatId) return fail("telegram_secrets_missing");
+  if (!token) return fail("telegram_bot_token_missing");
+  if (!chatId) return fail("telegram_chat_id_missing");
   if (chatId !== "-5492444972") return fail("telegram_chat_id_mismatch");
   if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) return fail("telegram_token_invalid_format");
   const categories: Record<string, string> = {

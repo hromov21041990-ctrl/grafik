@@ -17,6 +17,8 @@ const success = () => Response.json({ ok: true, result: { message_id: 1, chat: {
 test("requires secrets and intended group without making a request", async () => {
   const noFetch = () => { throw new Error("unexpected request"); };
   assert.equal((await sendSupportNotification(ticket, {}, noFetch)).error, "telegram_secrets_missing");
+  assert.equal((await sendSupportNotification(ticket, { chatId: secrets.chatId }, noFetch)).error, "telegram_bot_token_missing");
+  assert.equal((await sendSupportNotification(ticket, { token: secrets.token }, noFetch)).error, "telegram_chat_id_missing");
   assert.equal((await sendSupportNotification(ticket, { ...secrets, chatId: "-1" }, noFetch)).error, "telegram_chat_id_mismatch");
   assert.equal((await sendSupportNotification(ticket, { ...secrets, token: "invalid" }, noFetch)).error, "telegram_token_invalid_format");
 });

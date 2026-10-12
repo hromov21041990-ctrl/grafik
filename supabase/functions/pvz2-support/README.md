@@ -55,7 +55,9 @@ a timeout can occur after Telegram accepted the message, so blind retries may du
 Do not resubmit the original ticket merely to retry its Telegram notification.
 
 Safe codes:
-- telegram_secrets_missing: one or both Edge Function Secrets are empty.
+- telegram_secrets_missing: both Edge Function Secrets are empty.
+- telegram_bot_token_missing: TELEGRAM_BOT_TOKEN is missing or empty.
+- telegram_chat_id_missing: TELEGRAM_CHAT_ID is missing or empty.
 - telegram_chat_id_mismatch: group secret differs from the requested group.
 - telegram_token_invalid_format: replacement token has malformed characters.
 - telegram_http_401: token rejected; check rotation and the stored value.
