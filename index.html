@@ -455,7 +455,7 @@ function renderAdmin(){
   '<p class="fine-note">Штрафы и возвраты вводит только владелец. <b>Положительная сумма</b> уменьшает зарплату, <b>отрицательная (например, −500)</b> возвращает штраф и увеличивает сумму к выплате. Суммы и отметки выплат сохраняются в облаке. Отметка относится к расчёту за весь период графика.</p>'+
   `<table class="report"><thead><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th><th>Штрафы / возвраты, ₽</th><th>К выплате</th><th>Выплата</th></tr></thead><tbody>`+
   payrollRows+
-  `<tr class="fine-summary"><td colspan="6">Общий фонд оплаты</td><td><b>${money(num(gross))}</b></td><td><b id="finesTotal">${money(num(finesTotal))}</b></td><td><b id="netPayrollTotal" class="${gross-finesTotal<0?'fine-negative':''}">${money(num(gross-finesTotal))}</b></td><td>—</td></tr></tbody></table>;
+  `<tr class="fine-summary"><td colspan="6">Общий фонд оплаты</td><td><b>${money(num(gross))}</b></td><td><b id="finesTotal">${money(num(finesTotal))}</b></td><td><b id="netPayrollTotal" class="${gross-finesTotal<0?'fine-negative':''}">${money(num(gross-finesTotal))}</b></td><td>—</td></tr></tbody></table>`;
  document.getElementById('adminRecords').innerHTML='<p>'+esc(emp.value)+'</p><table class="report"><tr><th>Дата</th><th>Работа</th><th>Часы</th><th>Сумма</th><th>Действия</th></tr>'+records().filter(r=>r.employee===emp.value).map(r=>`<tr><td>${formatDate(r.dateId)}</td><td>${shiftInfo(r.dateId,r.t)?.label||labels[r.t]}</td><td>${num(r.hours)}</td><td>${money(r.pay)}</td><td><button onclick="editRecord('${r.dateId}','${r.t}',${r.i})">Исправить</button> <button onclick="removeRecord('${r.dateId}','${r.t}',${r.i})">Удалить</button></td></tr>`).join('')+'</table>';
 }
 function showAdmin(){if(!owner())return;renderAdmin();document.getElementById('adminPanel').style.display='block';document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'})}
@@ -481,7 +481,7 @@ async function logout(){const token=session&&session.token;syncContext++;session
 async function resumeSession(){const token=sessionStorage.getItem('pvzAuthToken'),role=sessionStorage.getItem('pvzAuthRole');if(!token||!['admin','owner'].includes(role))return;session={role,name:role==='owner'?'Владелец':'Администратор',token};try{await hydrateRemote();enterApp()}catch(e){session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');setSyncStatus('Требуется повторный вход',true)}}
 syncEmployeeOptions();
 weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from))});
-emp.onchange=render;document.getElementById('weekFilter').onchange=renderfor(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
+emp.onchange=render;document.getElementById('weekFilter').onchange=render;for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
 document.getElementById('loginPass').onkeydown=e=>{if(e.key==='Enter')login()};
 resumeSession();
 </script></body></html>
