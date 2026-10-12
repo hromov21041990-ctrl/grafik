@@ -1,0 +1,4 @@
+project_id = "grafik"
+
+[functions.pvz2-support]
+verify_jwt = false
