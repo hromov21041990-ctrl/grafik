@@ -52,6 +52,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .settings-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:16px;margin:14px 0}.settings-box{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fafafa}.settings-box h4{margin:0 0 12px}.employee-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.employee-row:last-child{border-bottom:0}.employee-add{display:flex;gap:8px;margin-top:12px}.employee-add input{min-width:0;flex:1}.rate-grid{display:grid;grid-template-columns:1fr 150px;gap:8px 12px;align-items:center}.rate-grid input{width:100%}
 .fine-input{max-width:130px;min-width:105px;min-height:40px;text-align:right;font-weight:650;background:#fffdf8!important;border:1px solid #ebd5a2!important;border-radius:9px}
 .fine-input:focus{outline:2px solid #d6a44a;outline-offset:1px}
+.fine-input.fine-refund{background:#eaf8ef!important;border-color:#79c99b!important;color:#176b39}
 .fine-net{font-weight:750;white-space:nowrap}
 .fine-negative{color:#c62828}
 .fine-summary{background:#f5f0ff;font-weight:750}
@@ -352,7 +353,7 @@ function fineFor(name){
  const stored=payments&&payments.__fines;
  if(!plainObject(stored)||!Object.prototype.hasOwnProperty.call(stored,name))return 0;
  const value=Number(stored[name]);
- return Number.isFinite(value)&&value>=0?num(value):0;
+ return Number.isFinite(value)&&value>=-1000000&&value<=1000000?num(value):0;
 }
 function moneyNetFor(name){return num(totals(name).pay-fineFor(name))}
 function previewFine(input){
@@ -360,7 +361,8 @@ function previewFine(input){
  const row=input.closest('tr'),gross=Number(row?.dataset.gross||0);
  if(!row)return;
  const raw=input.value.trim(),amount=raw===''?0:Number(raw);
- if(!Number.isFinite(amount)||amount<0)return;
+ if(!Number.isFinite(amount)||amount < -1000000||amount>1000000)return;
+ input.classList.toggle('fine-refund',amount<0);
  const netCell=row.querySelector('.fine-net');
  const remaining=num(gross-amount);
  if(netCell){netCell.textContent=money(remaining);netCell.classList.toggle('fine-negative',remaining<0)}
@@ -380,8 +382,8 @@ function saveFine(input){
  const name=decodeURIComponent(input.dataset.employee||'');
  if(!reportEmployees().includes(name))return;
  const value=input.value.trim()===''?0:Number(input.value);
- if(!Number.isFinite(value)||value<0||value>1000000||Math.round(value*100)!==value*100){
-  alert('Укажите сумму штрафа от 0 до 1 000 000 ₽ с точностью до копеек.');
+ if(!Number.isFinite(value)||value < -1000000||value>1000000||Math.abs(value*100-Math.round(value*100))>0.000001){
+  alert('Укажите сумму от −1 000 000 до 1 000 000 ₽ с точностью до копеек. Отрицательная сумма — возврат штрафа.');
   input.value=String(fineFor(name));previewFine(input);return;
  }
  const rounded=Math.round(value*100)/100;
@@ -400,11 +402,11 @@ function renderAdmin(){
  const payrollRows=reportEmployees().map(n=>{
   const a=totals(n),fine=fineFor(n),net=num(a.pay-fine);
   gross+=a.pay;finesTotal+=fine;
-  return `<tr data-gross="${a.pay}"><td>${esc(n)}${employees.includes(n)?'':'<small> · удалён</small>'}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td>${money(a.pay)}</td><td><input class="fine-input" type="number" inputmode="decimal" min="0" max="1000000" step="0.01" value="${fine}" data-employee="${encodeURIComponent(n)}" aria-label="Штраф для ${esc(n)} в рублях" oninput="previewFine(this)" onchange="saveFine(this)"></td><td class="fine-net${net<0?' fine-negative':''}">${money(net)}</td></tr>`;
+  return `<tr data-gross="${a.pay}"><td>${esc(n)}${employees.includes(n)?'':'<small> · удалён</small>'}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td>${money(a.pay)}</td><td><input class="fine-input${fine<0?' fine-refund':''}" type="number" inputmode="decimal" min="-1000000" max="1000000" step="0.01" value="${fine}" data-employee="${encodeURIComponent(n)}" aria-label="Штраф или возврат штрафа для ${esc(n)} в рублях" oninput="previewFine(this)" onchange="saveFine(this)"></td><td class="fine-net${net<0?' fine-negative':''}">${money(net)}</td></tr>`;
  }).join('');
  document.getElementById('adminSummary').innerHTML=
-  '<p class="fine-note">Штрафы вводит только владелец. Суммы сохраняются в облаке для всего периода графика и вычитаются из итоговой зарплаты; еженедельные отметки выплат отдельно.</p>'+
-  `<table class="report"><thead><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th><th>Штрафы, ₽</th><th>К выплате</th></tr></thead><tbody>`+
+  '<p class="fine-note">Штрафы и возвраты вводит только владелец. <b>Положительная сумма</b> уменьшает зарплату, <b>отрицательная (например, −500)</b> возвращает штраф и увеличивает сумму к выплате. Сохраняется в облаке за весь период; еженедельные отметки выплат отдельно.</p>'+
+  `<table class="report"><thead><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th><th>Штрафы / возвраты, ₽</th><th>К выплате</th></tr></thead><tbody>`+
   payrollRows+
   `<tr class="fine-summary"><td colspan="6">Общий фонд оплаты</td><td><b>${money(num(gross))}</b></td><td><b id="finesTotal">${money(num(finesTotal))}</b></td><td><b id="netPayrollTotal" class="${gross-finesTotal<0?'fine-negative':''}">${money(num(gross-finesTotal))}</b></td></tr></tbody></table>`;
  document.getElementById('adminRecords').innerHTML='<p>'+esc(emp.value)+'</p><table class="report"><tr><th>Дата</th><th>Работа</th><th>Часы</th><th>Сумма</th><th>Действия</th></tr>'+records().filter(r=>r.employee===emp.value).map(r=>`<tr><td>${formatDate(r.dateId)}</td><td>${shiftInfo(r.dateId,r.t)?.label||labels[r.t]}</td><td>${num(r.hours)}</td><td>${money(r.pay)}</td><td><button onclick="editRecord('${r.dateId}','${r.t}',${r.i})">Исправить</button> <button onclick="removeRecord('${r.dateId}','${r.t}',${r.i})">Удалить</button></td></tr>`).join('')+'</table>';
@@ -419,7 +421,7 @@ function exportReport(){
  if(!owner())return;
  const names=reportEmployees();
  let gross=0,fines=0;
- const rows=[['Сотрудник',`Смены ${rates.full}`,`Смены ${rates.late}`,`Часы ${rates.hourly}`,`Часы ${rates.repack}`,'Всего часов','Начислено','Штрафы','К выплате']];
+ const rows=[['Сотрудник',`Смены ${rates.full}`,`Смены ${rates.late}`,`Часы ${rates.hourly}`,`Часы ${rates.repack}`,'Всего часов','Начислено','Штрафы / возвраты','К выплате']];
  for(const n of names){const a=totals(n),fine=fineFor(n);gross+=a.pay;fines+=fine;rows.push([n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay,fine,num(a.pay-fine)])}
  rows.push(['Общий фонд оплаты','','','','','',num(gross),num(fines),num(gross-fines)]);
  const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
