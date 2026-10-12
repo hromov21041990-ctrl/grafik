@@ -101,7 +101,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   </div>
 </div>
 <div class="toast" id="undoToast"><span id="undoText">Запись снята</span><button type="button" onclick="undoRemove()">Вернуть</button></div>
-<div class="card" id="adminPanel" style="display:none;margin-top:16px;padding:18px"><h2 style="margin-top:0">Панель владельца</h2><div class="admin-inner"><p>Период графика: 28 сентября 2026 — 3 января 2027 · начисления по записанным выходам</p><h3>Сотрудники и ставки</h3><div class="settings-grid"><div class="settings-box"><h4>Действующие сотрудники</h4><div id="employeeSettings"></div><div class="employee-add"><input id="newEmployeeName" maxlength="80" placeholder="Имя нового сотрудника"><button class="primary" onclick="addEmployee()">Добавить</button></div><small>После удаления сотрудник останется в старых сменах и отчётах, но его нельзя будет назначать на новые смены.</small></div><div class="settings-box"><h4>Ставки</h4><div class="rate-grid"><label for="rateFull">Полная смена</label><input id="rateFull" type="number" min="1" step="1"><label for="rateLate">Вторая смена</label><input id="rateLate" type="number" min="1" step="1"><label for="rateHourly">Почасовой выход, ₽/ч</label><input id="rateHourly" type="number" min="1" step="1"><label for="rateRepack">Переупаковка, ₽/ч</label><input id="rateRepack" type="number" min="1" step="1"></div><button class="primary" style="margin-top:12px" onclick="updateRates()">Сохранить ставки</button></div></div><button onclick="exportReport()">Скачать отчёт CSV</button><div id="adminSummary" style="overflow:auto"></div><h3>Записи сотрудника</h3><div id="adminRecords" style="overflow:auto"></div></div></div>
+<div class="card" id="adminPanel" style="display:none;margin-top:16px;padding:18px"><h2 style="margin-top:0">Панель владельца</h2><div class="admin-inner"><p>Период графика: 28 сентября 2026 — 3 января 2027 · начисления по записанным выходам</p><h3>Сотрудники и ставки</h3><div class="settings-grid"><div class="settings-box"><h4>Действующие сотрудники</h4><div id="employeeSettings"></div><div class="employee-add"><input id="newEmployeeName" maxlength="80" placeholder="Имя нового сотрудника"><button class="primary" onclick="addEmployee()">Добавить</button></div><small>После удаления сотрудник останется в старых сменах и отчётах, но его нельзя будет назначать на новые смены.</small></div><div class="settings-box"><h4>Ставки</h4><div class="rate-grid"><label for="rateFull">Полная смена</label><input id="rateFull" type="number" min="1" step="1"><label for="rateLate">Вторая смена</label><input id="rateLate" type="number" min="1" step="1"><label for="rateHourly">Почасовой выход, ₽/ч</label><input id="rateHourly" type="number" min="1" step="1"><label for="rateRepack">Переупаковка, ₽/ч</label><input id="rateRepack" type="number" min="1" step="1"></div><button class="primary" style="margin-top:12px" onclick="updateRates()">Сохранить ставки</button></div></div><div class="controls" style="padding:10px 0"><label>Неделя расчёта: <select id="salaryWeekFilter"><option value="all">Весь период</option></select></label><button onclick="exportReport()">Скачать отчёт CSV</button></div><div id="adminSummary" style="overflow:auto"></div><h3>Записи сотрудника</h3><div id="adminRecords" style="overflow:auto"></div></div></div>
 <div class="modal" id="modal">
   <div class="dialog">
     <h2>Запись на работу</h2>
@@ -297,7 +297,8 @@ function save(){try{localStorage.setItem('pvzOct2026',JSON.stringify(data))}catc
 function records(){const out=[];Object.entries(data).forEach(([k,v])=>{const m=k.match(/^(\d{4}-\d{2}-\d{2})_(full|late|hourly|repack)$/);if(!m)return;const dateId=m[1],t=m[2],fixed=shiftInfo(dateId,t);(Array.isArray(v)?v:[v]).forEach((r,i)=>{const hours=fixed?fixed.hours:Number(r.hours),pay=fixed?fixed.pay:num(hours*(t==='repack'?rates.repack:rates.hourly));out.push({...r,dateId,t,i,hours,pay})})});return out.sort((a,b)=>a.dateId.localeCompare(b.dateId))}
 function reportEmployees(){return [...new Set([...employees,...records().map(r=>r.employee).filter(Boolean)])]}
 function syncEmployeeOptions(){const report=reportEmployees(),oldReport=emp.value,oldModal=modalEmp.value;emp.innerHTML='';report.forEach(n=>emp.add(new Option(n+(employees.includes(n)?'':' (удалён)'),n)));modalEmp.innerHTML='';employees.forEach(n=>modalEmp.add(new Option(n,n)));emp.value=report.includes(oldReport)?oldReport:(report[0]||'');modalEmp.value=employees.includes(oldModal)?oldModal:(employees[0]||'');document.getElementById('employeeCount').textContent=employees.length+' '+(employees.length===1?'сотрудник':employees.length>=2&&employees.length<=4?'сотрудника':'сотрудников')}
-function totals(n){const rs=records().filter(r=>r.employee===n);return {full:rs.filter(r=>r.t==='full'||(r.t==='late'&&isWeekend(r.dateId))).length,late:rs.filter(r=>r.t==='late'&&!isWeekend(r.dateId)).length,hourly:num(rs.filter(r=>r.t==='hourly').reduce((a,r)=>a+r.hours,0)),repack:num(rs.filter(r=>r.t==='repack').reduce((a,r)=>a+r.hours,0)),hours:num(rs.reduce((a,r)=>a+r.hours,0)),pay:num(rs.reduce((a,r)=>a+r.pay,0)),count:rs.length}}
+function salaryWeek(){return document.getElementById("salaryWeekFilter")?.value||"all"}
+function totals(n,week="all"){const rs=records().filter(r=>r.employee===n&&(week==="all"||(r.dateId>=week&&r.dateId<=addDays(week,6))));return {full:rs.filter(r=>r.t==='full'||(r.t==='late'&&isWeekend(r.dateId))).length,late:rs.filter(r=>r.t==='late'&&!isWeekend(r.dateId)).length,hourly:num(rs.filter(r=>r.t==='hourly').reduce((a,r)=>a+r.hours,0)),repack:num(rs.filter(r=>r.t==='repack').reduce((a,r)=>a+r.hours,0)),hours:num(rs.reduce((a,r)=>a+r.hours,0)),pay:num(rs.reduce((a,r)=>a+r.pay,0)),count:rs.length}}
 function render(){
  if(!session)return;
  let html=`<thead><tr><th class="date">Дата</th><th>Смена №1</th><th>Смена №2<br><small>в выходные — полный день</small></th><th>Почасовые выходы</th><th>${owner()?`Переупаковка · ${money(rates.repack)}/ч`:'Переупаковка'}</th></tr></thead><tbody>`;
@@ -305,7 +306,7 @@ function render(){
  for(const t of ['full','late']){const r=data[key(dateId,t)],info=shiftInfo(dateId,t);html+=`<td class="cell ${w} ${adjacent}"><div class="shift ${r?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div><small>${info.label}</small>${r?`<b>${esc(r.employee)}</b>`:'<span class="status">Свободно</span>'}${r?`<button onclick="removeRecord('${dateId}','${t}',0)">Снять запись</button>`:`<button onclick="openHourly('${dateId}','${t}')">Назначить сотрудника</button>`}</div></td>`}
  for(const t of ['hourly','repack']){html+=`<td class="cell ${w} ${adjacent}">`;const rows=data[key(dateId,t)]||[];rows.forEach((r,i)=>{html+=`<div class="shift ${t==='repack'?'repack':'hourly'}"><b>${esc(r.employee)}</b><small>${esc(r.start)}–${esc(r.end)} · ${num(r.hours)} ч</small>${owner()?`<b>${money(r.pay)}</b>`:''}<button onclick="removeRecord('${dateId}','${t}',${i})">Удалить</button></div>`});if(!rows.length)html+='<span class="empty">Нет выходов</span>';html+=`<button class="primary" onclick="openHourly('${dateId}','${t}')">${t==='repack'?'+ Переупаковка':'+ Почасовой выход'}</button></td>`}html+='</tr>'});
  document.getElementById('calendar').innerHTML=html+'</tbody>';
- const stats=document.getElementById('stats');if(owner()){const a=totals(emp.value);stats.style.display='flex';stats.innerHTML=`<div class="stat">${esc(emp.value)}<br><b>${a.count} выходов · ${a.hours} ч</b></div><div class="stat">Начислено<br><b>${money(a.pay)}</b></div>`}else{stats.style.display='none';stats.innerHTML=''}
+ const stats=document.getElementById('stats');if(owner()){const a=totals(emp.value,salaryWeek());stats.style.display='flex';stats.innerHTML=`<div class="stat">${esc(emp.value)}<br><b>${a.count} выходов · ${a.hours} ч</b></div><div class="stat">Начислено<br><b>${money(a.pay)}</b></div>`}else{stats.style.display='none';stats.innerHTML=''}
  if(owner())renderAdmin();
 }
 function overlap(dateId,n,start,end,skip){return records().some(r=>{const info=shiftInfo(r.dateId,r.t);return r.dateId===dateId&&r.employee===n&&!(skip&&r.dateId===skip.dateId&&r.t===skip.t&&r.i===skip.i)&&start<(info?info.end:r.end)&&end>(info?info.start:r.start)})}
@@ -356,13 +357,13 @@ function renderSettings(){if(!owner())return;document.getElementById('employeeSe
 async function addEmployee(){if(!owner())return;const input=document.getElementById('newEmployeeName'),name=input.value.trim();if(!name)return alert('Введите имя сотрудника.');if(name.length>80)return alert('Имя слишком длинное.');if(employees.some(n=>n.toLocaleLowerCase('ru')===name.toLocaleLowerCase('ru')))return alert('Такой сотрудник уже есть.');await applySettings([...employees,name],rates);input.value=''}
 async function removeEmployee(encoded){if(!owner())return;const name=decodeURIComponent(encoded);if(employees.length<=1)return alert('Нельзя удалить последнего сотрудника.');if(!employees.includes(name))return;if(!confirm('Удалить '+name+' из списка назначения? Старые смены и выплаты сохранятся.'))return;await applySettings(employees.filter(n=>n!==name),rates)}
 async function updateRates(){if(!owner())return;const read=id=>Number(String(document.getElementById(id).value).replace(',','.')),next={full:read('rateFull'),late:read('rateLate'),hourly:read('rateHourly'),repack:read('rateRepack')};if(Object.values(next).some(v=>!Number.isFinite(v)||v<=0||v>1000000))return alert('Все ставки должны быть больше нуля.');if(!confirm('Сохранить новые ставки и пересчитать начисления за весь период?'))return;await applySettings(employees,next)}
-function fineFor(name){
- const stored=payments&&payments.__fines;
- if(!plainObject(stored)||!Object.prototype.hasOwnProperty.call(stored,name))return 0;
- const value=Number(stored[name]);
+function fineFor(name,week=salaryWeek()){
+ const stored=week==="all"?payments&&payments.__fines:payments&&payments.__weeklyFines;
+ if(!plainObject(stored)||!Object.prototype.hasOwnProperty.call(stored,week==="all"?name:week+"|"+name))return 0;
+ const value=Number(stored[week==="all"?name:week+"|"+name]);
  return Number.isFinite(value)&&value>=-1000000&&value<=1000000?num(value):0;
 }
-function moneyNetFor(name){return num(totals(name).pay-fineFor(name))}
+function moneyNetFor(name){return num(totals(name,salaryWeek()).pay-fineFor(name,salaryWeek()))}
 function previewFine(input){
  if(!owner())return;
  const row=input.closest('tr'),gross=Number(row?.dataset.gross||0);
@@ -395,17 +396,18 @@ function saveFine(input){
  }
  const rounded=Math.round(value*100)/100;
  if(rounded===fineFor(name))return;
- const fines=Object.assign(Object.create(null),plainObject(payments.__fines)?payments.__fines:{});
- if(rounded===0)delete fines[name];else fines[name]=rounded;
- payments={...payments,__fines:fines};
+ const week=salaryWeek(),field=week==="all"?"__fines":"__weeklyFines",key=week==="all"?name:week+"|"+name;
+ const fines={...(plainObject(payments[field])?payments[field]:{})};
+ if(rounded===0)delete fines[key];else fines[key]=rounded;
+ payments={...payments,[field]:fines};
  try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}
  renderAdmin();
  queuePaymentSave(clone(payments));
 }
-function getSalaryPaid(name){
- const entries=payments&&payments.__salaryPaid;
- if(!plainObject(entries)||!Object.prototype.hasOwnProperty.call(entries,name))return null;
- const item=entries[name];
+function getSalaryPaid(name,week=salaryWeek()){
+ const entries=week==="all"?payments&&payments.__salaryPaid:payments;
+ if(!plainObject(entries)||!Object.prototype.hasOwnProperty.call(entries,week==="all"?name:addDays(week,7)+"_"+name))return null;
+ const item=entries[week==="all"?name:addDays(week,7)+"_"+name];
  return plainObject(item)&&Number.isFinite(Number(item.amount))&&typeof item.markedAt==='string'?item:null;
 }
 function salaryPayControl(name,amount){
@@ -426,18 +428,18 @@ function toggleSalaryPaid(button,paid){
  if(paymentPending||paymentDirty){alert('Дождитесь сохранения предыдущих изменений выплат.');return}
  const name=decodeURIComponent(button.dataset.employee||'');
  if(!reportEmployees().includes(name))return;
- const amount=moneyNetFor(name);
- const state=plainObject(payments.__salaryPaid)?{...payments.__salaryPaid}:{};
+ const week=salaryWeek(),amount=moneyNetFor(name),field=week==="all"?"__salaryPaid":null,key=week==="all"?name:addDays(week,7)+"_"+name;
+ const state={...(plainObject(payments.__salaryPaid)?payments.__salaryPaid:{})};
  if(paid){
   if(getSalaryPaid(name)||amount<=0)return;
   if(!confirm('Подтвердить выплату '+money(amount)+' сотруднику '+name+' за весь период графика?'))return;
-  state[name]={amount,markedAt:new Date().toISOString()};
+  state[key]={amount,markedAt:new Date().toISOString()};
  }else{
   const previous=getSalaryPaid(name);if(!previous)return;
   if(!confirm('Снять отметку о выплате '+money(Number(previous.amount))+' сотруднику '+name+'?'))return;
-  delete state[name];
+  delete state[key];
  }
- payments={...payments,__salaryPaid:state};
+ payments=week==="all"?{...payments,__salaryPaid:state}:{...payments,[key]:paid?{amount,markedAt:new Date().toISOString()}:undefined};if(week!=="all"&&!paid)delete payments[key];
  try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}
  renderAdmin();
  queuePaymentSave(clone(payments));
@@ -447,12 +449,12 @@ function renderAdmin(){
  renderSettings();
  let gross=0,finesTotal=0;
  const payrollRows=reportEmployees().map(n=>{
-  const a=totals(n),fine=fineFor(n),net=num(a.pay-fine);
+  const a=totals(n,salaryWeek()),fine=fineFor(n),net=num(a.pay-fine);
   gross+=a.pay;finesTotal+=fine;
   return `<tr data-gross="${a.pay}"><td>${esc(n)}${employees.includes(n)?'':'<small> · удалён</small>'}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td>${money(a.pay)}</td><td><input class="fine-input${fine<0?' fine-refund':''}" type="number" inputmode="decimal" min="-1000000" max="1000000" step="0.01" value="${fine}" data-employee="${encodeURIComponent(n)}" aria-label="Штраф или возврат штрафа для ${esc(n)} в рублях" oninput="previewFine(this)" onchange="saveFine(this)"></td><td class="fine-net${net<0?' fine-negative':''}">${money(net)}</td><td class="salary-paycell">${salaryPayControl(n,net)}</td></tr>`;
  }).join('');
  document.getElementById('adminSummary').innerHTML=
-  '<p class="fine-note">Штрафы и возвраты вводит только владелец. <b>Положительная сумма</b> уменьшает зарплату, <b>отрицательная (например, −500)</b> возвращает штраф и увеличивает сумму к выплате. Суммы и отметки выплат сохраняются в облаке. Отметка относится к расчёту за весь период графика.</p>'+
+  '<p class="fine-note">Штрафы и возвраты вводит только владелец. <b>Положительная сумма</b> уменьшает зарплату, <b>отрицательная (например, −500)</b> возвращает штраф и увеличивает сумму к выплате. Суммы и отметки выплат сохраняются в облаке. Отметка относится к выбранному периоду расчёта. Штрафы для недель вводятся отдельно.</p>'+
   `<table class="report"><thead><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th><th>Штрафы / возвраты, ₽</th><th>К выплате</th><th>Выплата</th></tr></thead><tbody>`+
   payrollRows+
   `<tr class="fine-summary"><td colspan="6">Общий фонд оплаты</td><td><b>${money(num(gross))}</b></td><td><b id="finesTotal">${money(num(finesTotal))}</b></td><td><b id="netPayrollTotal" class="${gross-finesTotal<0?'fine-negative':''}">${money(num(gross-finesTotal))}</b></td><td>—</td></tr></tbody></table>`;
@@ -465,7 +467,7 @@ function exportReport(){
  let gross=0,fines=0;
  const rows=[['Сотрудник',`Смены ${rates.full}`,`Смены ${rates.late}`,`Часы ${rates.hourly}`,`Часы ${rates.repack}`,'Всего часов','Начислено','Штрафы / возвраты','К выплате','Статус выплаты','Выплачено','Дата отметки']];
  for(const n of names){
-  const a=totals(n),fine=fineFor(n),net=num(a.pay-fine),paid=getSalaryPaid(n);
+  const a=totals(n,salaryWeek()),fine=fineFor(n),net=num(a.pay-fine),paid=getSalaryPaid(n);
   gross+=a.pay;fines+=fine;
   rows.push([n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay,fine,net,paid?(Math.abs(Number(paid.amount)-net)>.009?'Сумма изменилась':'Выплачено'):'Не выплачено',paid?Number(paid.amount):'',paid?paid.markedAt:'']);
  }
@@ -475,13 +477,13 @@ function exportReport(){
  a.href=url;a.download='Зарплата_и_выплаты_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-function enterApp(){syncContext++;emp.value=employees[0];emp.disabled=false;const week=currentWeekStart();document.getElementById('weekFilter').value=week;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
+function enterApp(){syncContext++;emp.value=employees[0];emp.disabled=false;const week=currentWeekStart();document.getElementById('weekFilter').value=week;document.getElementById('salaryWeekFilter').value=week;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
 async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,err=document.getElementById('loginError');err.textContent='Выполняется вход…';try{const result=await api('login',{role,password:p},'');session={role:result.role,name:result.role==='owner'?'Владелец':'Администратор',token:result.token};sessionStorage.setItem('pvzAuthToken',result.token);sessionStorage.setItem('pvzAuthRole',result.role);await hydrateRemote(result);enterApp()}catch(e){session=null;err.textContent=e.message}}
 async function logout(){const token=session&&session.token;syncContext++;session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');if(token)api('logout',{},token).catch(()=>{});lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML='';setSyncStatus('Вход не выполнен')}
 async function resumeSession(){const token=sessionStorage.getItem('pvzAuthToken'),role=sessionStorage.getItem('pvzAuthRole');if(!token||!['admin','owner'].includes(role))return;session={role,name:role==='owner'?'Владелец':'Администратор',token};try{await hydrateRemote();enterApp()}catch(e){session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');setSyncStatus('Требуется повторный вход',true)}}
 syncEmployeeOptions();
-weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from))});
-emp.onchange=render;document.getElementById('weekFilter').onchange=render;for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
+weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from));document.getElementById('salaryWeekFilter').add(new Option(w.period,w.from))});
+emp.onchange=render;document.getElementById('weekFilter').onchange=()=>{document.getElementById('salaryWeekFilter').value=document.getElementById('weekFilter').value;render()};document.getElementById('salaryWeekFilter').onchange=()=>{document.getElementById('weekFilter').value=salaryWeek();render()};for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
 document.getElementById('loginPass').onkeydown=e=>{if(e.key==='Enter')login()};
 resumeSession();
 </script></body></html>
