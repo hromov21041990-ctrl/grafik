@@ -436,6 +436,46 @@ function reportEmployees(){return [...new Set([...employees,...records().map(r=>
 function syncEmployeeOptions(){const report=reportEmployees(),oldReport=emp.value,oldModal=modalEmp.value;emp.innerHTML='';report.forEach(n=>emp.add(new Option(n+(employees.includes(n)?'':' (удалён)'),n)));modalEmp.innerHTML='';employees.forEach(n=>modalEmp.add(new Option(n,n)));emp.value=report.includes(oldReport)?oldReport:(report[0]||'');modalEmp.value=employees.includes(oldModal)?oldModal:(employees[0]||'');document.getElementById('employeeCount').textContent=employees.length+' '+(employees.length===1?'сотрудник':employees.length>=2&&employees.length<=4?'сотрудника':'сотрудников')}
 function salaryWeek(){return document.getElementById("salaryWeekFilter")?.value||"all"}
 function totals(n,week="all"){const rs=records().filter(r=>r.employee===n&&(week==="all"||(r.dateId>=week&&r.dateId<=addDays(week,6))));return {full:rs.filter(r=>r.t==='full'||(r.t==='late'&&isWeekend(r.dateId))).length,late:rs.filter(r=>r.t==='late'&&!isWeekend(r.dateId)).length,hourly:num(rs.filter(r=>r.t==='hourly').reduce((a,r)=>a+r.hours,0)),repack:num(rs.filter(r=>r.t==='repack').reduce((a,r)=>a+r.hours,0)),hours:num(rs.reduce((a,r)=>a+r.hours,0)),pay:num(rs.reduce((a,r)=>a+r.pay,0)),count:rs.length}}
+
+function renderMobileCalendar(){
+ const root=document.getElementById('mobileCalendar');
+ if(!root||!session)return;
+ const expanded=new Set([...root.querySelectorAll('details[open]')].map(x=>x.dataset.date));
+ const today=isoDate(new Date()),visible=visibleDates();
+ const fullDay=visible.length>7;
+ root.innerHTML=visible.map(({dateId,dt})=>{
+  const weekend=isWeekend(dateId);
+  const slots=['full','late'].map(t=>({type:t,item:data[key(dateId,t)],info:shiftInfo(dateId,t)}));
+  const hourly=Array.isArray(data[key(dateId,'hourly')])?data[key(dateId,'hourly')]:[];
+  const repack=Array.isArray(data[key(dateId,'repack')])?data[key(dateId,'repack')]:[];
+  const assigned=slots.filter(x=>x.item).length,extra=hourly.length+repack.length;
+  const opened=expanded.has(dateId)||(!expanded.size&&dateId===today)||(!expanded.size&&!visible.some(x=>x.dateId===today)&&dateId===visible[0].dateId&&!fullDay);
+  const fixed=slots.map(({type,item,info})=>`<section><div class="mobile-shift-heading">${esc(info.label)}</div><div class="shift ${item?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div>${item?`<b>${esc(item.employee)}</b>`:'<span class="status">Свободно</span>'}<button type="button" ${item?`onclick="removeRecord('${dateId}','${type}',0)">Снять запись`:`onclick="openHourly('${dateId}','${type}')">Назначить сотрудника`}</button></div></section>`).join('');
+  const additional=[['hourly','Почасовые выходы',hourly],['repack','Переупаковка',repack]].map(([type,title,rows])=>`<section><div class="mobile-shift-heading">${title}</div>${rows.map((item,i)=>`<div class="shift ${type==='repack'?'repack':'hourly'} mobile-hour-entry"><b>${esc(item.employee)}</b><small>${esc(item.start)}–${esc(item.end)} · ${num(Number(item.hours)||0)} ч</small>${owner()?`<b>${money(Number(item.pay)||0)}</b>`:''}<button type="button" onclick="removeRecord('${dateId}','${type}',${i})">Удалить</button></div>`).join('')||'<div class="mobile-empty">Нет выходов</div>'}<button class="mobile-extra-btn" type="button" onclick="openHourly('${dateId}','${type}')">+ ${type==='repack'?'Переупаковка':'Почасовой выход'}</button></section>`).join('');
+  return `<details class="mobile-day ${weekend?'weekend':''}" data-date="${dateId}" ${opened?'open':''}><summary><span class="mobile-dateblock"><strong>${dt.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</strong><small>${dt.toLocaleDateString('ru-RU',{weekday:'long'})}</small></span><span class="mobile-day-overview"><b>${assigned} из 2 смен занято</b>${extra?extra+' доп. выходов · ':''}${assigned===2?'Все смены назначены':'Свободно: '+(2-assigned)}</span><span class="mobile-chevron" aria-hidden="true">›</span></summary><div class="mobile-day-body">${fixed}${additional}</div></details>`;
+ }).join('');
+}
+function mobileNavigate(section){
+ if(!session)return;
+ if(section==='calendar'){
+  document.querySelector('.table-wrap')?.scrollIntoView({behavior:'smooth',block:'start'});
+ }else if(owner()){
+  if(section==='salary'){
+   document.getElementById('adminPanel').style.display='block';
+   document.getElementById('salaryWeekFilter')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }else if(section==='settings'){
+   document.getElementById('adminPanel').style.display='block';
+   document.querySelector('#adminPanel .settings-grid')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+ }
+ document.querySelectorAll('#mobileBottomNav button').forEach(btn=>btn.classList.toggle('mobile-active',btn.getAttribute('onclick')==="mobileNavigate('"+section+"')"));
+}
+function showMobileNav(){
+ const nav=document.getElementById('mobileBottomNav');
+ if(!nav)return;
+ nav.style.display=session?'flex':'none';
+ nav.querySelectorAll('.mobile-owner-only').forEach(btn=>btn.style.display=owner()?'flex':'none');
+}
 function render(){
  if(!session)return;
  let html=`<thead><tr><th class="date">Дата</th><th>Смена №1</th><th>Смена №2<br><small>в выходные — полный день</small></th><th>Почасовые выходы</th><th>${owner()?`Переупаковка · ${money(rates.repack)}/ч`:'Переупаковка'}</th></tr></thead><tbody>`;
@@ -443,6 +483,7 @@ function render(){
  for(const t of ['full','late']){const r=data[key(dateId,t)],info=shiftInfo(dateId,t);html+=`<td class="cell ${w} ${adjacent}"><div class="shift ${r?'busy':'free'}"><div class="top"><span>${info.start}–${info.end}</span>${owner()?`<span class="price">${money(info.pay)}</span>`:''}</div><small>${info.label}</small>${r?`<b>${esc(r.employee)}</b>`:'<span class="status">Свободно</span>'}${r?`<button onclick="removeRecord('${dateId}','${t}',0)">Снять запись</button>`:`<button onclick="openHourly('${dateId}','${t}')">Назначить сотрудника</button>`}</div></td>`}
  for(const t of ['hourly','repack']){html+=`<td class="cell ${w} ${adjacent}">`;const rows=data[key(dateId,t)]||[];rows.forEach((r,i)=>{html+=`<div class="shift ${t==='repack'?'repack':'hourly'}"><b>${esc(r.employee)}</b><small>${esc(r.start)}–${esc(r.end)} · ${num(r.hours)} ч</small>${owner()?`<b>${money(r.pay)}</b>`:''}<button onclick="removeRecord('${dateId}','${t}',${i})">Удалить</button></div>`});if(!rows.length)html+='<span class="empty">Нет выходов</span>';html+=`<button class="primary" onclick="openHourly('${dateId}','${t}')">${t==='repack'?'+ Переупаковка':'+ Почасовой выход'}</button></td>`}html+='</tr>'});
  document.getElementById('calendar').innerHTML=html+'</tbody>';
+ renderMobileCalendar();
  const stats=document.getElementById('stats');if(owner()){const a=totals(emp.value,salaryWeek());stats.style.display='flex';stats.innerHTML=`<div class="stat">${esc(emp.value)}<br><b>${a.count} выходов · ${a.hours} ч</b></div><div class="stat">Начислено<br><b>${money(a.pay)}</b></div>`}else{stats.style.display='none';stats.innerHTML=''}
  if(owner())renderAdmin();
 }
@@ -623,10 +664,10 @@ function exportReport(){
  a.href=url;a.download='Зарплата_и_выплаты_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-function enterApp(){syncContext++;emp.value=employees[0];emp.disabled=false;const week=currentWeekStart();document.getElementById('weekFilter').value=week;document.getElementById('salaryWeekFilter').value=week;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
+function enterApp(){syncContext++;emp.value=employees[0];emp.disabled=false;const week=currentWeekStart();document.getElementById('weekFilter').value=week;document.getElementById('salaryWeekFilter').value=week;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';showMobileNav();render();if(owner())showAdmin()}
 async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,err=document.getElementById('loginError');err.textContent='Выполняется вход…';try{const result=await api('login',{role,password:p},'');session={role:result.role,name:result.role==='owner'?'Владелец':'Администратор',token:result.token};sessionStorage.setItem('pvzAuthToken',result.token);sessionStorage.setItem('pvzAuthRole',result.role);await hydrateRemote(result);enterApp()}catch(e){session=null;err.textContent=e.message}}
-async function logout(){const token=session&&session.token;syncContext++;session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');if(token)api('logout',{},token).catch(()=>{});lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML='';setSyncStatus('Вход не выполнен')}
-async function resumeSession(){const token=sessionStorage.getItem('pvzAuthToken'),role=sessionStorage.getItem('pvzAuthRole');if(!token||!['admin','owner'].includes(role))return;session={role,name:role==='owner'?'Владелец':'Администратор',token};try{await hydrateRemote();enterApp()}catch(e){session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');setSyncStatus('Требуется повторный вход',true)}}
+async function logout(){const token=session&&session.token;syncContext++;session=null;showMobileNav();sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');if(token)api('logout',{},token).catch(()=>{});lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML='';setSyncStatus('Вход не выполнен')}
+async function resumeSession(){const token=sessionStorage.getItem('pvzAuthToken'),role=sessionStorage.getItem('pvzAuthRole');if(!token||!['admin','owner'].includes(role))return;session={role,name:role==='owner'?'Владелец':'Администратор',token};try{await hydrateRemote();enterApp()}catch(e){session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');setSyncStatus('Требуется повторный вход',true);showMobileNav()}}
 syncEmployeeOptions();
 weekDefinitions().forEach(w=>{document.getElementById('weekFilter').add(new Option(w.period,w.from));document.getElementById('salaryWeekFilter').add(new Option(w.period,w.from))});
 emp.onchange=render;document.getElementById('weekFilter').onchange=()=>{document.getElementById('salaryWeekFilter').value=document.getElementById('weekFilter').value;render()};document.getElementById('salaryWeekFilter').onchange=()=>{document.getElementById('weekFilter').value=salaryWeek();render()};for(const id of ['start','end','workType','workDate','modalEmployee'])document.getElementById(id).oninput=updateCost;
