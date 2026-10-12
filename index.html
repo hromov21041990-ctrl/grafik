@@ -50,6 +50,13 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .formrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field input,.field select{width:100%}
 .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .settings-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:16px;margin:14px 0}.settings-box{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fafafa}.settings-box h4{margin:0 0 12px}.employee-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.employee-row:last-child{border-bottom:0}.employee-add{display:flex;gap:8px;margin-top:12px}.employee-add input{min-width:0;flex:1}.rate-grid{display:grid;grid-template-columns:1fr 150px;gap:8px 12px;align-items:center}.rate-grid input{width:100%}
+.fine-input{max-width:130px;min-width:105px;min-height:40px;text-align:right;font-weight:650;background:#fffdf8!important;border:1px solid #ebd5a2!important;border-radius:9px}
+.fine-input:focus{outline:2px solid #d6a44a;outline-offset:1px}
+.fine-net{font-weight:750;white-space:nowrap}
+.fine-negative{color:#c62828}
+.fine-summary{background:#f5f0ff;font-weight:750}
+.fine-note{font-size:12px;color:#737781;margin:6px 0 12px}
+#adminSummary .report td:last-child,#adminSummary .report th:last-child{background:#f6fbf7}
 @media(max-width:700px){.wrap{padding:12px}h1{font-size:22px}.header{display:block}.controls{margin-top:12px}}
 @media(max-width:760px){.settings-grid{grid-template-columns:1fr}.employee-add{flex-direction:column}.rate-grid{grid-template-columns:1fr 120px}}
 </style>
@@ -341,7 +348,65 @@ function renderSettings(){if(!owner())return;document.getElementById('employeeSe
 async function addEmployee(){if(!owner())return;const input=document.getElementById('newEmployeeName'),name=input.value.trim();if(!name)return alert('Введите имя сотрудника.');if(name.length>80)return alert('Имя слишком длинное.');if(employees.some(n=>n.toLocaleLowerCase('ru')===name.toLocaleLowerCase('ru')))return alert('Такой сотрудник уже есть.');await applySettings([...employees,name],rates);input.value=''}
 async function removeEmployee(encoded){if(!owner())return;const name=decodeURIComponent(encoded);if(employees.length<=1)return alert('Нельзя удалить последнего сотрудника.');if(!employees.includes(name))return;if(!confirm('Удалить '+name+' из списка назначения? Старые смены и выплаты сохранятся.'))return;await applySettings(employees.filter(n=>n!==name),rates)}
 async function updateRates(){if(!owner())return;const read=id=>Number(String(document.getElementById(id).value).replace(',','.')),next={full:read('rateFull'),late:read('rateLate'),hourly:read('rateHourly'),repack:read('rateRepack')};if(Object.values(next).some(v=>!Number.isFinite(v)||v<=0||v>1000000))return alert('Все ставки должны быть больше нуля.');if(!confirm('Сохранить новые ставки и пересчитать начисления за весь период?'))return;await applySettings(employees,next)}
-function renderAdmin(){if(!owner())return;renderSettings();renderWeekly();let total=0;document.getElementById('adminSummary').innerHTML=`<table class="report"><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th></tr>`+reportEmployees().map(n=>{const a=totals(n);total+=a.pay;return `<tr><td>${esc(n)}${employees.includes(n)?'':'<small> · удалён</small>'}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td><b>${money(a.pay)}</b></td></tr>`}).join('')+`<tr><td colspan="6"><b>Общий фонд оплаты</b></td><td><b>${money(total)}</b></td></tr></table>`;
+function fineFor(name){
+ const stored=payments&&payments.__fines;
+ if(!plainObject(stored)||!Object.prototype.hasOwnProperty.call(stored,name))return 0;
+ const value=Number(stored[name]);
+ return Number.isFinite(value)&&value>=0?num(value):0;
+}
+function moneyNetFor(name){return num(totals(name).pay-fineFor(name))}
+function previewFine(input){
+ if(!owner())return;
+ const row=input.closest('tr'),gross=Number(row?.dataset.gross||0);
+ if(!row)return;
+ const raw=input.value.trim(),amount=raw===''?0:Number(raw);
+ if(!Number.isFinite(amount)||amount<0)return;
+ const netCell=row.querySelector('.fine-net');
+ const remaining=num(gross-amount);
+ if(netCell){netCell.textContent=money(remaining);netCell.classList.toggle('fine-negative',remaining<0)}
+ let totalFine=0,totalGross=0;
+ document.querySelectorAll('#adminSummary tr[data-gross]').forEach(tr=>{
+  totalGross+=Number(tr.dataset.gross||0);
+  const v=tr.querySelector('.fine-input')?.value;
+  totalFine+=Number(v||0);
+ });
+ const totalPenalty=document.getElementById('finesTotal'),netTotal=document.getElementById('netPayrollTotal');
+ if(totalPenalty)totalPenalty.textContent=money(num(totalFine));
+ if(netTotal)netTotal.textContent=money(num(totalGross-totalFine));
+ if(netTotal)netTotal.classList.toggle('fine-negative',totalGross-totalFine<0);
+}
+function saveFine(input){
+ if(!owner())return;
+ const name=decodeURIComponent(input.dataset.employee||'');
+ if(!reportEmployees().includes(name))return;
+ const value=input.value.trim()===''?0:Number(input.value);
+ if(!Number.isFinite(value)||value<0||value>1000000||Math.round(value*100)!==value*100){
+  alert('Укажите сумму штрафа от 0 до 1 000 000 ₽ с точностью до копеек.');
+  input.value=String(fineFor(name));previewFine(input);return;
+ }
+ const rounded=Math.round(value*100)/100;
+ if(rounded===fineFor(name))return;
+ const fines=Object.assign(Object.create(null),plainObject(payments.__fines)?payments.__fines:{});
+ if(rounded===0)delete fines[name];else fines[name]=rounded;
+ payments={...payments,__fines:fines};
+ try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}
+ renderAdmin();
+ queuePaymentSave(clone(payments));
+}
+function renderAdmin(){
+ if(!owner())return;
+ renderSettings();renderWeekly();
+ let gross=0,finesTotal=0;
+ const payrollRows=reportEmployees().map(n=>{
+  const a=totals(n),fine=fineFor(n),net=num(a.pay-fine);
+  gross+=a.pay;finesTotal+=fine;
+  return `<tr data-gross="${a.pay}"><td>${esc(n)}${employees.includes(n)?'':'<small> · удалён</small>'}</td><td>${a.full}</td><td>${a.late}</td><td>${a.hourly}</td><td>${a.repack}</td><td>${a.hours}</td><td>${money(a.pay)}</td><td><input class="fine-input" type="number" inputmode="decimal" min="0" max="1000000" step="0.01" value="${fine}" data-employee="${encodeURIComponent(n)}" aria-label="Штраф для ${esc(n)} в рублях" oninput="previewFine(this)" onchange="saveFine(this)"></td><td class="fine-net${net<0?' fine-negative':''}">${money(net)}</td></tr>`;
+ }).join('');
+ document.getElementById('adminSummary').innerHTML=
+  '<p class="fine-note">Штрафы вводит только владелец. Суммы сохраняются в облаке для всего периода графика и вычитаются из итоговой зарплаты; еженедельные отметки выплат отдельно.</p>'+
+  `<table class="report"><thead><tr><th>Сотрудник</th><th>${money(rates.full)}, смен</th><th>${money(rates.late)}, смен</th><th>${money(rates.hourly)}/ч, часы</th><th>${money(rates.repack)}/ч, часы</th><th>Всего часов</th><th>Начислено</th><th>Штрафы, ₽</th><th>К выплате</th></tr></thead><tbody>`+
+  payrollRows+
+  `<tr class="fine-summary"><td colspan="6">Общий фонд оплаты</td><td><b>${money(num(gross))}</b></td><td><b id="finesTotal">${money(num(finesTotal))}</b></td><td><b id="netPayrollTotal" class="${gross-finesTotal<0?'fine-negative':''}">${money(num(gross-finesTotal))}</b></td></tr></tbody></table>`;
  document.getElementById('adminRecords').innerHTML='<p>'+esc(emp.value)+'</p><table class="report"><tr><th>Дата</th><th>Работа</th><th>Часы</th><th>Сумма</th><th>Действия</th></tr>'+records().filter(r=>r.employee===emp.value).map(r=>`<tr><td>${formatDate(r.dateId)}</td><td>${shiftInfo(r.dateId,r.t)?.label||labels[r.t]}</td><td>${num(r.hours)}</td><td>${money(r.pay)}</td><td><button onclick="editRecord('${r.dateId}','${r.t}',${r.i})">Исправить</button> <button onclick="removeRecord('${r.dateId}','${r.t}',${r.i})">Удалить</button></td></tr>`).join('')+'</table>';
 }
 function weeklyRows(){
@@ -350,7 +415,17 @@ function weeklyRows(){
 function renderWeekly(){if(!owner())return;const selected=document.getElementById('paymentWeekFilter').value,rows=weeklyRows().filter(w=>selected==='all'||w.from===selected);document.getElementById('weeklyReport').innerHTML='<table class="report"><tr><th>Неделя</th><th>Дата выплаты</th><th>Сотрудник</th><th>Начислено</th><th>Статус</th></tr>'+rows.map(w=>{const paid=payments[w.k],encoded=encodeURIComponent(w.k);return `<tr><td>${w.period}</td><td>${w.date}</td><td>${esc(w.n)}</td><td>${money(w.pay)}</td><td>${paid?`Отмечено выплаченным: ${money(paid.amount)}${paid.amount!==w.pay?'<br><b>Начисление изменилось — проверьте разницу</b>':''}<br><button onclick="markPaid('${encoded}',false)">Снять отметку</button>`:`<button onclick="markPaid('${encoded}',true)">Отметить выплату</button>`}</td></tr>`}).join('')+'</table>'}
 function markPaid(encodedKey,value){if(!owner())return;const keyValue=decodeURIComponent(encodedKey),w=weeklyRows().find(x=>x.k===keyValue);if(!w)return;if(value&&!confirm('Подтвердить, что '+w.n+' получил(а) '+money(w.pay)+' за '+w.period+'?'))return;if(!value&&!confirm('Снять отметку выплаты?'))return;const next={...payments};if(value)next[w.k]={amount:w.pay,markedAt:new Date().toISOString()};else delete next[w.k];payments=next;try{localStorage.setItem('pvzPaymentsOct2026',JSON.stringify(payments))}catch(e){}renderWeekly();queuePaymentSave(clone(payments))}
 function showAdmin(){if(!owner())return;renderAdmin();document.getElementById('adminPanel').style.display='block';document.getElementById('adminPanel').scrollIntoView({behavior:'smooth'})}
-function exportReport(){if(!owner())return;const rows=[['Сотрудник',`Смены ${rates.full}`,`Смены ${rates.late}`,`Часы ${rates.hourly}`,`Часы ${rates.repack}`,'Всего часов','Начислено'],...reportEmployees().map(n=>{const a=totals(n);return [n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay]})];const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='Зарплата_до_конца_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportReport(){
+ if(!owner())return;
+ const names=reportEmployees();
+ let gross=0,fines=0;
+ const rows=[['Сотрудник',`Смены ${rates.full}`,`Смены ${rates.late}`,`Часы ${rates.hourly}`,`Часы ${rates.repack}`,'Всего часов','Начислено','Штрафы','К выплате']];
+ for(const n of names){const a=totals(n),fine=fineFor(n);gross+=a.pay;fines+=fine;rows.push([n,a.full,a.late,a.hourly,a.repack,a.hours,a.pay,fine,num(a.pay-fine)])}
+ rows.push(['Общий фонд оплаты','','','','','',num(gross),num(fines),num(gross-fines)]);
+ const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+ a.href=url;a.download='Зарплата_со_штрафами_2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function enterApp(){syncContext++;emp.value=employees[0];emp.disabled=false;const week=currentWeekStart();document.getElementById('weekFilter').value=week;document.getElementById('paymentWeekFilter').value=week;document.getElementById('login').style.display='none';document.getElementById('adminBtn').style.display=owner()?'inline-block':'none';document.getElementById('adminPanel').style.display=owner()?'block':'none';document.getElementById('loginError').textContent='';render();if(owner())showAdmin()}
 async function login(){const role=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value,err=document.getElementById('loginError');err.textContent='Выполняется вход…';try{const result=await api('login',{role,password:p},'');session={role:result.role,name:result.role==='owner'?'Владелец':'Администратор',token:result.token};sessionStorage.setItem('pvzAuthToken',result.token);sessionStorage.setItem('pvzAuthRole',result.role);await hydrateRemote(result);enterApp()}catch(e){session=null;err.textContent=e.message}}
 async function logout(){const token=session&&session.token;syncContext++;session=null;sessionStorage.removeItem('pvzAuthToken');sessionStorage.removeItem('pvzAuthRole');if(token)api('logout',{},token).catch(()=>{});lastRemoved=null;clearTimeout(undoTimer);document.getElementById('undoToast').classList.remove('show');closeModal();document.getElementById('login').style.display='flex';document.getElementById('adminPanel').style.display='none';document.getElementById('loginPass').value='';document.getElementById('calendar').innerHTML='';document.getElementById('stats').innerHTML='';setSyncStatus('Вход не выполнен')}
