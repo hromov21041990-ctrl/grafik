@@ -722,14 +722,16 @@ function payrollData(){
 }
 function renderPayroll(){
  if(!s||s.role!=='owner')return;
- const {rows,all,from,end}=payrollData(),paid=s.payments||{};
- const fmt=v=>new Date(v+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
- E('payrollPeriod').textContent=all?'Начисления по всем назначенным сменам. Для отметки выплаты выберите конкретную неделю.':'Период: '+fmt(from)+' — '+fmt(end)+' · данные из графика смен';
- const total=rows.reduce((a,x)=>a+x.gross,0);
- E('pay').innerHTML='<table class="paytable payroll-report"><thead><tr><th>Сотрудник</th><th>Смен</th><th>Часов</th><th>Начислено</th><th>Выплата</th></tr></thead><tbody>'+
- rows.map(x=>{const payment=paid[from+'|'+x.name],encoded=encodeURIComponent(x.name);
- return '<tr><td>'+esc(x.name)+'</td><td>'+x.shifts+'</td><td>'+Number(x.hours.toFixed(2))+'</td><td class="sum">'+rub(x.gross)+'</td><td>'+(all?'—':payment?'<span class="paidstatus">✓ Выплачено'+(payment.amount!==undefined?' '+rub(payment.amount):'')+'</span>':'<button class="small" onclick="paid(\''+encoded+'\')">Отметить выплату</button>')+'</td></tr>'}).join('')+
- '<tr class="payroll-total"><td><b>Общий фонд зарплаты</b></td><td colspan="2"></td><td class="sum"><b>'+rub(total)+'</b></td><td></td></tr></tbody></table>';
+ const {rows,all,from,end}=payrollData(),paid=s.payments||{},period=all?'all':from;
+ E('payrollPeriod').textContent=all?'Сводка за весь период · начисления, штрафы и возвраты':'Неделя '+from+' — '+end+' · расчёт из графика';
+ const total=rows.reduce((a,x)=>a+x.gross,0),fineTotal=rows.reduce((a,x)=>a+x.fine,0);
+ const items=rows.map(x=>{
+  const payment=paid[period+'|'+x.name],name=encodeURIComponent(x.name);
+  const action=payment?'<span class="paidstatus">✓ Выплачено '+(payment.amount===undefined?'':rub(payment.amount))+'</span><button class="small" onclick="payrollMark(&quot;unmark&quot;,&quot;'+name+'&quot;)">Снять отметку</button>':x.net>0?'<button class="small" onclick="payrollMark(&quot;mark&quot;,&quot;'+name+'&quot;)">Отметить выплату</button>':'—';
+  const warning=payment&&payment.amount!==undefined&&Math.abs(Number(payment.amount)-x.net)>.009?'<small class="payroll-warning">Начисление изменилось — проверьте разницу</small>':'';
+  return '<tr><td>'+esc(x.name)+'</td><td>'+x.shifts+' / '+Number(x.hours.toFixed(2))+'</td><td>'+rub(x.gross)+'</td><td><input class="fine-input" type="number" step=".01" min="-1000000" max="1000000" value="'+x.fine+'" data-employee="'+name+'" onchange="payrollFine(this)"></td><td class="sum">'+rub(x.net)+'</td><td>'+action+warning+'</td></tr>';
+ }).join('');
+ E('pay').innerHTML='<table class="paytable payroll-report"><thead><tr><th>Сотрудник</th><th>Смен / часов</th><th>Начислено</th><th>Штраф / возврат</th><th>К выплате</th><th>Выплата</th></tr></thead><tbody>'+items+'<tr class="payroll-total"><td><b>Общий фонд зарплаты</b></td><td></td><td>'+rub(total)+'</td><td>'+rub(fineTotal)+'</td><td class="sum"><b>'+rub(total-fineTotal)+'</b></td><td></td></tr></tbody></table>';
 }
 function exportPayroll(){
  if(!s||s.role!=='owner')return;
