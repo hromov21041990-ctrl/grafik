@@ -703,7 +703,7 @@ function draw(){
     const r=all.find(v=>v.date===d&&v.position===p);
     if(!r)return '<td data-slot="Смена №'+(p+1)+'"><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
     return '<td data-slot="Смена №'+(p+1)+'"><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+(r.jobRoleName?'<small class="job-shift-tag">'+esc(r.jobRoleName)+'</small>':'')+
-      '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+'</div>'+
+      '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+(r.kind==='half'?' · полсмены':'')+'</div>'+
       (s.role==='owner'?'<span class="shift-pay">'+rub(r.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
       '</div></td>';
    }).join('')+'</tr>';
@@ -722,7 +722,7 @@ function payrollData(){
   const assigned=source.filter(x=>x.employee===name);
   const gross=Math.round(assigned.reduce((sum,x)=>sum+Number(x.pay||0),0)*100)/100;
   const fine=all?Object.entries(fines).reduce((sum,[k,v])=>sum+(k.endsWith('|'+name)?Number(v||0):0),0):Number(fines[from+'|'+name]||0);
-  return {name,gross,fine,net:Math.round((gross-fine)*100)/100,shifts:assigned.filter(x=>x.kind==='shift').length,hours:assigned.filter(x=>x.kind==='hour').reduce((sum,x)=>sum+(new Date('1970-01-01T'+x.end+':00')-new Date('1970-01-01T'+x.start+':00'))/3600000,0),};
+  return {name,gross,fine,net:Math.round((gross-fine)*100)/100,shifts:assigned.filter(x=>x.kind==='shift'||x.kind==='half').length,hours:assigned.filter(x=>x.kind==='hour').reduce((sum,x)=>sum+(new Date('1970-01-01T'+x.end+':00')-new Date('1970-01-01T'+x.start+':00'))/3600000,0),};
  });
  return {rows,all,from,end};
 }
