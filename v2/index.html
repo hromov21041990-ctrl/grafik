@@ -1180,7 +1180,7 @@ if(sb)sb.auth.getSession().then(({data,error})=>{
 
 <div id="updateNotice" hidden role="status"><span>Доступна новая версия «По графику».</span><button type="button" onclick="location.replace(location.pathname+'?updated='+Date.now())">Обновить</button></div>
 <script>
-const CURRENT_BUILD='fde52e8236da';
+const CURRENT_BUILD='2026-10-14-mobile-update-1';
 let lastUpdateCheck=0;
 async function checkAppUpdate(){
  if(Date.now()-lastUpdateCheck<30000)return;lastUpdateCheck=Date.now();
