@@ -711,9 +711,12 @@ function payrollData(){
  const end=add(from,6),shift=Array.isArray(s.schedule)?s.schedule:[];
  const source=all?shift:shift.filter(x=>x.date>=from&&x.date<=end);
  const names=[...new Set([...s.employees,...shift.map(x=>x.employee).filter(Boolean)])];
+ const fines=s.payments?.__fines||{};
  const rows=names.map(name=>{
   const assigned=source.filter(x=>x.employee===name);
-  return {name,shifts:assigned.filter(x=>x.kind==='shift').length,hours:assigned.filter(x=>x.kind==='hour').reduce((sum,x)=>sum+(new Date('1970-01-01T'+x.end+':00')-new Date('1970-01-01T'+x.start+':00'))/3600000,0),gross:Math.round(assigned.reduce((sum,x)=>sum+Number(x.pay||0),0)*100)/100};
+  const gross=Math.round(assigned.reduce((sum,x)=>sum+Number(x.pay||0),0)*100)/100;
+  const fine=all?Object.entries(fines).reduce((sum,[k,v])=>sum+(k.endsWith('|'+name)?Number(v||0):0),0):Number(fines[from+'|'+name]||0);
+  return {name,gross,fine,net:Math.round((gross-fine)*100)/100,shifts:assigned.filter(x=>x.kind==='shift').length,hours:assigned.filter(x=>x.kind==='hour').reduce((sum,x)=>sum+(new Date('1970-01-01T'+x.end+':00')-new Date('1970-01-01T'+x.start+':00'))/3600000,0),};
  });
  return {rows,all,from,end};
 }
