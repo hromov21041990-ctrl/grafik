@@ -738,6 +738,28 @@ function exportPayroll(){
  const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
  a.href=url;a.download='По_графику_начисления_'+(all?'весь_период':from)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function payrollAction(operation,name,amount){
+ if(!s||s.role!=='owner'||mutateBusy)return;
+ mutateBusy=true;
+ try{
+  const result=await sb.rpc('pvz2_owner_payroll',{p_token:token,p_week:E('payrollWeek').value==='all'?'all':monday(E('week').value),p_employee:name,p_operation:operation,p_amount:amount===undefined?null:amount,p_expected_version:s.version});
+  if(result.error)throw Error(result.error.message);
+  s={...s,payments:result.data.payments,version:Number(result.data.version)};
+  renderPayroll();syncLabel('Сохранено · '+syncClock(),'ok');
+ }catch(e){E('status').textContent='Ошибка сохранения: '+e.message}
+ finally{mutateBusy=false}
+}
+function payrollFine(input){
+ const amount=Number(input.value),name=decodeURIComponent(input.dataset.employee);
+ if(!Number.isFinite(amount)||Math.abs(amount)>1000000||Math.abs(amount*100-Math.round(amount*100))>.000001){
+  alert('Введите сумму от -1 000 000 до 1 000 000 ₽');renderPayroll();return;
+ }
+ payrollAction('fine',name,amount);
+}
+function payrollMark(operation,encoded){
+ const name=decodeURIComponent(encoded);
+ if(confirm(operation==='mark'?'Подтвердить выплату сотруднику '+name+'?':'Снять отметку выплаты сотруднику '+name+'?'))payrollAction(operation,name);
+}
 async function mutate(action,p){
  if(!s||mutateBusy)return;
  mutateBusy=true;let needSync=false;
