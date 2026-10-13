@@ -373,6 +373,31 @@ body.assignment-open{overflow:hidden}
 .assignment-dialog .work-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .assignment-dialog .work-actions button{min-height:45px;padding:10px 7px;font-size:13px}
 }
+</style><style id="mobile-day-cards">
+.mobile-days{display:none}
+@media(max-width:767px){
+#calendar{display:none}
+.mobile-days{display:grid;gap:10px}
+.mobile-day{border:1px solid var(--line);border-radius:15px;background:#fff;overflow:hidden}
+.mobile-day[open]{border-color:#A5DDCB}
+.mobile-day.mobile-weekend{border-left:3px solid #ECB7B7}
+.mobile-day.mobile-today{box-shadow:0 0 0 1px #22C998}
+.mobile-day summary{list-style:none;display:flex;align-items:center;gap:8px;padding:14px 12px;min-height:69px;cursor:pointer}
+.mobile-day summary::-webkit-details-marker{display:none}
+.mobile-day-date{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.mobile-day-date strong{font-size:14px;font-weight:800}
+.mobile-day-date small{font-size:11px;color:var(--muted)}
+.mobile-day-count{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.mobile-day-count b{font-size:12px;color:#0B8965}
+.mobile-day-count small{font-size:11px;color:var(--muted)}
+.mobile-chevron{font-size:22px;color:#0B8965;transition:transform .2s}
+.mobile-day[open] .mobile-chevron{transform:rotate(90deg)}
+.mobile-day-content{padding:12px;display:grid;gap:12px;border-top:1px solid var(--line)}
+.mobile-slot>b{display:block;font-size:12px;color:var(--muted);margin-bottom:7px}
+.mobile-slot .slotbtn{width:100%;min-height:65px;height:auto}
+.mobile-slot .slot{min-height:auto}
+.mobile-no-work{font-size:13px;color:var(--muted);padding:8px}
+}
 </style></head>
 <body>
 <div class="page">
@@ -471,6 +496,7 @@ body.assignment-open{overflow:hidden}
    </div>
    <div id="period" class="week-range"></div>
    <div id="calendar" class="calendar" aria-label="Календарь смен"></div>
+<div id="mobileDays" class="mobile-days" aria-label="Смены по дням"></div>
    <div class="table-hint"><span><i class="legenddot"></i>Свободно</span><span><i class="legenddot busy-dot"></i>Назначено</span><span><i class="legenddot off-dot"></i>Выходной</span></div>
    <p id="status" role="status"></p>
   </section>
@@ -757,6 +783,22 @@ function draw(){
    }).join('')+'</tr>';
  }).join('');
  E('calendar').innerHTML='<table class="weektable">'+header+'<tbody>'+rows+'</tbody></table>';
+ const root=E('mobileDays'),previous=root.dataset.week||'';
+ const opened=new Set(previous===from?[...root.querySelectorAll('details[open]')].map(el=>el.dataset.date):[]);
+ root.dataset.week=from;
+ root.innerHTML=workdays.map(day=>{
+  const d=day.date,dayRows=all.filter(v=>v.date===d),used=dayRows.length,free=Math.max(0,s.config.positions-used);
+  const weekday=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][day.dow];
+  const open=previous===from?opened.has(d):d===today;
+  const status=day.open?used+' из '+s.config.positions+' смен занято':'Выходной';
+  const remaining=day.open?(free?free+' свободно':'Все занято'):'Нет смен';
+  const slots=day.open?Array.from({length:s.config.positions},(_,p)=>{
+   const item=dayRows.find(v=>v.position===p);
+   if(!item)return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b><button type="button" class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></div>';
+   return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b><div class="slot busy"><span class="person">'+esc(item.employee)+'</span>'+(item.jobRoleName?'<small class="job-shift-tag">'+esc(item.jobRoleName)+'</small>':'')+'<div class="shift-time">'+esc(item.start)+'–'+esc(item.end)+(item.kind==='half'?' · полсмены':'')+'</div>'+(s.role==='owner'?'<span class="shift-pay">'+rub(item.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+item.id+'\')">Снять запись</button>':'')+'</div></div>';
+  }).join(''):'<div class="mobile-no-work">В этот день точка не работает</div>';
+  return '<details class="mobile-day'+(day.dow>=5?' mobile-weekend':'')+(d===today?' mobile-today':'')+'" data-date="'+d+'"'+(open?' open':'')+'><summary><span class="mobile-day-date"><strong>'+weekday+'</strong><small>'+fmt(d)+'</small></span><span class="mobile-day-count"><b>'+status+'</b><small>'+remaining+'</small></span><span class="mobile-chevron" aria-hidden="true">›</span></summary><div class="mobile-day-content">'+slots+'</div></details>';
+ }).join('');
  if(s.role==='owner')renderPayroll();
 }
 function payrollData(){
