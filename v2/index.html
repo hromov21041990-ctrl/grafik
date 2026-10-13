@@ -135,6 +135,7 @@ h3{font-size:17px}
 .payroll-report .fine-input{width:130px;max-width:100%;min-height:40px;padding:7px 9px;border-radius:9px;font-size:16px}
 .payroll-report .paidstatus{display:block;margin-bottom:6px}.payroll-warning{display:block;color:#b36828;font-size:11px;margin-top:5px}
 @media(max-width:767px){.payroll-report td:nth-child(2):before{content:"Смен / часов: "}.payroll-report td:nth-child(3):before{content:"Начислено: "}.payroll-report td:nth-child(4):before{content:"Штраф / возврат: "}.payroll-report td:nth-child(5):before{content:"К выплате: "}.payroll-report td:nth-child(6){grid-column:1/-1}.payroll-report td:nth-child(6) button{width:100%;min-height:42px}.payroll-report .fine-input{width:100%}}
+@media(max-width:767px){.job-entry{grid-template-columns:repeat(2,minmax(0,1fr))!important}.job-entry .job-name{grid-column:1/-1}.job-entry .job-half{grid-column:1/-1}.job-entry button{grid-column:1/-1}}
 </style><link rel="stylesheet" href="./mobile.css"><style id="brand-theme">
 /* По графику — фирменный интерфейс, поверх базовых и мобильных стилей */
 :root{--bg:#F3F5F7;--surface:#fff;--ink:#0F2D3D;--muted:#637684;--line:#E5EAF0;--brand:#22C998;--brand-dark:#0DAE80;--brand-soft:#E6F9F3;--good:#059E74;--good-bg:#EAFCF5;--danger:#C65656;--shadow:0 9px 28px rgba(15,45,61,.065)}
@@ -354,7 +355,7 @@ body.help-open{overflow:hidden}
  .help-span{grid-column:1}
  .help-bottom{align-items:stretch}
  .help-bottom button{width:100%}
-}.job-rows,.job-mapping{display:grid;gap:9px}.job-entry{display:grid;grid-template-columns:minmax(130px,2fr) repeat(3,minmax(100px,1fr)) 40px;gap:9px;align-items:center}.job-entry button{padding:8px}.job-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.mapping-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1fr);align-items:center;gap:12px;border-bottom:1px solid #e4ecea;padding:7px 0}.mapping-row span{overflow-wrap:anywhere}.job-shift-tag{display:block;font-size:11px;color:#476f80;font-weight:700}@media(max-width:600px){.job-entry{grid-template-columns:1fr 1fr 40px}.job-entry .job-name{grid-column:1/-1}.mapping-row{grid-template-columns:1fr}}
+}.job-rows,.job-mapping{display:grid;gap:9px}.job-entry{display:grid;grid-template-columns:minmax(130px,2fr) repeat(3,minmax(100px,1fr)) 40px;gap:9px;align-items:center}.job-entry button{padding:8px}.job-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.mapping-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(160px,1fr);align-items:center;gap:12px;border-bottom:1px solid #e4ecea;padding:7px 0}.mapping-row span{overflow-wrap:anywhere}.job-shift-tag{display:block;font-size:11px;color:#476f80;font-weight:700}@media(max-width:600px){.job-entry{grid-template-columns:1fr 1fr}.job-entry button{grid-column:1/-1}.job-entry .job-name{grid-column:1/-1}.mapping-row{grid-template-columns:1fr}}
 </style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/dist/umd/supabase.min.js"></script></head>
 <body>
 <div class="page">
