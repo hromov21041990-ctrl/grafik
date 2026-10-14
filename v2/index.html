@@ -1408,8 +1408,9 @@ dayUI('days',[0,1,2,3,4,5,6]);namesFill();addCreateJobRole();mode(true);E('role'
 if(sb)sb.auth.getSession().then(({data,error})=>{
  if(recoveryMode)return showRecoveryPasswordForm();
  if(error){E('error').textContent=authErrorText(error);return}
- if(data.session)loadPoints();
-});else if(token)api('load').then(enter).catch(logout);
+ if(data.session){loadPoints();return}
+ if(token)api('load').then(enter).catch(()=>{sessionStorage.removeItem('pvz2token');token='';});
+});else if(token)api('load').then(enter).catch(()=>{sessionStorage.removeItem('pvz2token');token='';});
 </script>
 <div id="updateNotice" hidden role="status"><span>Доступна новая версия «По графику».</span><button type="button" onclick="updateAppNow()">Обновить</button></div>
 <script>
