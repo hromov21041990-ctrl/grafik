@@ -69,7 +69,7 @@ function suggestMemberLogin(name:string){
 
 async function createSession(c:any,role:string,member:any=null){
  const token=rand(32);
- const {error}=await db.from("pvz2_sessions").insert({token_hash:await digest(token),company_id:c.id,role,member_id:member?.id||null,expires_at:new Date(Date.now()+24*3600*1000).toISOString()});
+ const {error}=await db.from("pvz2_sessions").insert({token_hash:await digest((member?"pvz-v2-password-preview:":"")+token),company_id:c.id,role,member_id:member?.id||null,expires_at:new Date(Date.now()+24*3600*1000).toISOString()});
  if(error)throw Error("Ошибка создания сеанса");
  if(member?.must_change_password)return {token,mustChangePassword:true,employee:member.employee_name,login:member.login};
  return {token,company:publicCompany(c,role,member?.employee_name||null)};
@@ -127,7 +127,7 @@ if(body.action==="emailCreate"){
 if(body.action==="register"||body.action==="login"||body.action==="resetPassword"){
  return resp(origin,403,{error:"Используйте вход и регистрацию владельца по email или личный логин сотрудника."});
 }
-const bearer=req.headers.get("authorization")||"";if(!bearer.startsWith("Bearer ")||bearer.length>150)return resp(origin,401,{error:"Требуется вход"});const tokenHash=await digest(bearer.slice(7));const {data:s}=await db.from("pvz2_sessions").select("company_id,role,member_id").eq("token_hash",tokenHash).gt("expires_at",new Date().toISOString()).maybeSingle();if(!s)return resp(origin,401,{error:"Сеанс истёк. Войдите снова"});if(body.action==="logout"){await db.from("pvz2_sessions").delete().eq("token_hash",tokenHash);return resp(origin,200,{ok:true})}
+const bearer=req.headers.get("authorization")||"";if(!bearer.startsWith("Bearer ")||bearer.length>150)return resp(origin,401,{error:"Требуется вход"});const ownerHash=await digest(bearer.slice(7)),previewHash=await digest("pvz-v2-password-preview:"+bearer.slice(7));const {data:s}=await db.from("pvz2_sessions").select("token_hash,company_id,role,member_id").in("token_hash",[ownerHash,previewHash]).gt("expires_at",new Date().toISOString()).maybeSingle();if(!s||(s.role!=="owner"&&s.token_hash!==previewHash))return resp(origin,401,{error:"Сеанс истёк. Войдите снова"});const tokenHash=s.token_hash;if(body.action==="logout"){await db.from("pvz2_sessions").delete().eq("token_hash",tokenHash);return resp(origin,200,{ok:true})}
 const {data:c,error:loadErr}=await db.from("pvz2_companies").select("*").eq("id",s.company_id).single();if(loadErr||!c)return resp(origin,404,{error:"Точка не найдена"});
 let member:any=null;
 if(s.role!=="owner"){
