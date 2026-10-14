@@ -1127,6 +1127,95 @@ async function applyEmailPassword(){
  }catch(e){output.textContent=authErrorText(e)}
 }
 
+
+function renderMyPay(){
+ if(!s||s.role==='owner')return;
+ const who=s.myEmployee||'',monthly=(s.config.payrollMode||'weekly')==='monthly';
+ const week=monday(E('week').value||iso(new Date())),last=add(week,6),month=iso(new Date()).slice(0,7);
+ const items=(s.schedule||[]).filter(x=>x.employee===who&&(monthly?x.date.startsWith(month):x.date>=week&&x.date<=last));
+ const gross=items.reduce((sum,x)=>sum+Number(x.pay||0),0),fines=s.payments?.__fines||{},advances=s.payments?.__advances||{};
+ const fine=monthly?Object.entries(fines).reduce((sum,[key,v])=>sum+(key.startsWith(month)&&key.endsWith('|'+who)?Number(v):0),0):Number(fines[week+'|'+who]||0);
+ const adv=advances[month+'|'+who],advancePaid=monthly&&adv?.at?Number(adv.amount||0):0;
+ const paid=monthly?s.payments?.['salary|'+month+'|'+who]:s.payments?.[week+'|'+who];
+ E('myPayBody').innerHTML='<p class="formnote">'+esc(who)+' · '+(monthly?'Месяц '+month:'Неделя '+week+' — '+last)+'</p>'+
+ '<div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+
+ '<div class="metric"><span class="metric-label">Мои смены</span><strong>'+items.length+'</strong></div>'+
+ '<div class="metric"><span class="metric-label">Начислено</span><strong>'+rub(gross)+'</strong></div></div>'+
+ '<p><b>Корректировки:</b> '+rub(fine)+(monthly?' · <b>Выплаченный аванс:</b> '+rub(advancePaid):'')+'</p>'+
+ '<p><b>Остаток:</b> '+rub(gross-fine-advancePaid)+'</p>'+
+ '<p class="formnote">'+(paid?'✓ Выплата отмечена владельцем.':'Выплата пока не отмечена.')+'</p>';
+}
+async function renderMemberAccess(){
+ if(!s||s.role!=='owner')return;
+ const root=E('memberAccessRows');root.textContent='Загрузка доступов…';
+ try{
+  const r=await api('memberList');
+  if(!s||s.role!=='owner')return;
+  const known=new Map((r.members||[]).map(m=>[m.employee_name,m]));
+  root.innerHTML=s.employees.map(name=>{
+   const member=known.get(name),status=member?(member.active?'Активен · ':'Отключён · ')+member.login:'Доступ не выдан';
+   return '<div class="mapping-row" style="grid-template-columns:1fr;gap:8px">'+
+    '<b>'+esc(name)+'</b><small>'+esc(status)+'</small><div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">'+
+    '<select data-employee="'+esc(name)+'" aria-label="Права '+esc(name)+'" style="width:auto;min-width:160px">'+
+    '<option value="staff" '+(!member||member.role==='staff'?'selected':'')+'>Сотрудник</option>'+
+    '<option value="admin" '+(member?.role==='admin'?'selected':'')+'>Администратор</option></select>'+
+    '<button type="button" class="small" data-employee="'+esc(name)+'" onclick="issueMember(this)">'+(member?'Новый пароль':'Выдать доступ')+'</button>'+
+    (member?'<button type="button" class="small" data-employee="'+esc(name)+'" onclick="setMemberRole(this)">Сохранить роль</button>':'')+
+    (member?.active?'<button type="button" class="small" data-employee="'+esc(name)+'" onclick="disableMember(this)">Отключить</button>':'')+
+    '</div></div>';
+  }).join('');
+ }catch(e){root.textContent='Не удалось загрузить доступы: '+e.message}
+}
+async function issueMember(button){
+ if(!s||s.role!=='owner'||button.disabled)return;
+ const name=button.dataset.employee;
+ const sel=[...E('memberAccessRows').querySelectorAll('select')].find(x=>x.dataset.employee===name);
+ if(!confirm('Выдать '+name+' новый пароль? Старый пароль перестанет работать.'))return;
+ button.disabled=true;
+ try{
+  const r=await api('memberIssue',{employee:name,memberRole:sel?.value||'staff'});
+  const box=E('memberCredentials');box.classList.remove('hide');
+  box.innerHTML='<b>Передайте лично сотруднику '+esc(name)+':</b>'+
+   '<div class="recovery-code">Код точки: '+esc(s.code)+'</div>'+
+   '<div class="recovery-code">Логин: '+esc(r.credentials.login)+'</div>'+
+   '<div class="recovery-code">Пароль: '+esc(r.credentials.password)+'</div>'+
+   '<p class="formnote">Пароль показывается только сейчас. Не отправляйте его в общие чаты.</p>'+
+   '<button type="button" onclick="copyMemberCredentials()">Скопировать данные</button>';
+  E('memberAccessStatus').textContent='Личный доступ выдан.';
+  await renderMemberAccess();
+ }catch(e){E('memberAccessStatus').textContent='Ошибка: '+e.message}
+ finally{button.disabled=false}
+}
+function copyMemberCredentials(){
+ const value=E('memberCredentials').innerText.replace('Скопировать данные','').trim();
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(value).then(()=>alert('Скопировано')).catch(()=>prompt('Скопируйте данные',value));
+ else prompt('Скопируйте данные',value);
+}
+async function setMemberRole(button){
+ if(!s||s.role!=='owner')return;
+ const name=button.dataset.employee;
+ const sel=[...E('memberAccessRows').querySelectorAll('select')].find(x=>x.dataset.employee===name);
+ if(!sel)return;
+ button.disabled=true;
+ try{
+  await api('memberRole',{employee:name,memberRole:sel.value});
+  E('memberAccessStatus').textContent='Роль изменена. Прежние сеансы завершены.';
+  await renderMemberAccess();
+ }catch(e){E('memberAccessStatus').textContent=e.message}
+ finally{button.disabled=false}
+}
+async function disableMember(button){
+ if(!s||s.role!=='owner')return;
+ const name=button.dataset.employee;
+ if(!confirm('Отключить вход сотрудника '+name+'?'))return;
+ button.disabled=true;
+ try{
+  await api('memberDisable',{employee:name});
+  E('memberAccessStatus').textContent='Доступ отключён.';
+  await renderMemberAccess();
+ }catch(e){E('memberAccessStatus').textContent=e.message}
+ finally{button.disabled=false}
+}
 const HELP_TOPICS=[
  {q:"Как начать работу владельцу?",a:"1. Зарегистрируйте аккаунт владельца по электронной почте и подтвердите email из письма.\n2. Войдите как владелец и откройте «Мои точки».\n3. Создайте точку: укажите график, число мест в смене, сотрудников и ставки.\n4. Выберите её из списка и назначайте сотрудников в календаре."},
  {q:"Как добавить вторую точку?",a:"Войдите по email владельца, нажмите «Мои точки» и выберите «Добавить точку». У каждой точки свой код и настройки. Сотрудники входят по коду своей точки и паролю сотрудников."},
