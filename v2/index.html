@@ -546,9 +546,9 @@ body.assignment-open{overflow:hidden}
    </div>
    <div class="work-actions"><button class="primary" onclick="settings()">Сохранить настройки</button><button onclick="toggleSettings()">Отмена</button></div>
    <div class="security-box" id="memberAccessBox"><h3>Личные доступы сотрудников</h3><p class="formnote">Администратор назначает и снимает смены. Сотрудник только просматривает график и свои начисления.</p><div id="memberAccessRows" class="job-mapping"></div><p id="memberAccessStatus" class="security-message" role="status"></p><div id="memberCredentials" class="recovery-panel hide"></div></div><div class="security-box"><h3>Безопасность и доступ</h3><p class="formnote">Пароль владельца email-аккаунта восстанавливается по почте. Здесь можно обновить резервный код точки.</p>
-   <div class="grid-form"><div class="formfield"><label for="newOwnerPassword">Новый пароль владельца</label><div class="pass-wrap"><input id="newOwnerPassword" type="password" autocomplete="new-password" placeholder="Не менее 10 символов"><button type="button" aria-label="Показать пароль" onclick="togglePassword('newOwnerPassword',this)">◉</button></div></div>
+   <div class="grid-form"><div class="formfield"><label for="newOwnerPassword">Новый пароль email-аккаунта</label><div class="pass-wrap"><input id="newOwnerPassword" type="password" autocomplete="new-password" placeholder="Не менее 10 символов"><button type="button" aria-label="Показать пароль" onclick="togglePassword('newOwnerPassword',this)">◉</button></div></div>
    <p class="formnote">Пароль каждого сотрудника переиздаётся отдельно в разделе выше.</p></div>
-   <div class="work-actions"><button onclick="changePasswords()">Обновить резервный пароль владельца</button><button onclick="rotateRecovery()">Создать новый резервный код</button></div>
+   <div class="work-actions"><button onclick="changePasswords()">Изменить пароль аккаунта</button><button onclick="rotateRecovery()">Создать новый резервный код</button></div>
    <p id="securityStatus" class="security-message" role="status"></p><div id="ownerRecoveryResult" class="recovery-panel hide"></div>
    </div>
   </section>
@@ -1041,7 +1041,17 @@ function showCode(id,code){const box=E(id);box.classList.remove('hide');box.inne
 function copyRecovery(code){if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(code).then(()=>alert('Код скопирован')).catch(()=>prompt('Скопируйте код',code));else prompt('Скопируйте код',code)}
 function showRecovery(show){E('recoveryForm').classList.toggle('hide',!show);E('signin').classList.toggle('hide',show);E('reg').classList.add('hide');E('error').textContent='';E('recoveryResult').classList.add('hide');if(show)E('recoverCompany').value=E('signinCode').value}
 async function recoverPassword(){try{const code=E('recoverCompany').value.trim().toLowerCase();const r=await api('resetPassword',{code,recoveryCode:E('recoverCode').value,newPassword:E('recoverPassword').value});showCode('recoveryResult',r.recoveryCode);E('error').textContent='Пароль владельца изменён. Сохраните новый резервный код, затем войдите с новым паролем.';E('recoverCode').value='';E('recoverPassword').value=''}catch(e){E('error').textContent=e.message}}
-async function changePasswords(){const owner=E('newOwnerPassword').value;if(!owner)return E('securityStatus').textContent='Введите новый пароль владельца.';const patch={ownerPassword:owner};try{const r=await api('security',{...patch,expectedVersion:s.version});s=normalize(r.company);E('newOwnerPassword').value='';E('securityStatus').textContent='Пароли обновлены. Другим устройствам потребуется повторный вход.'}catch(e){E('securityStatus').textContent=e.message}}
+async function changePasswords(){
+ if(!s||s.role!=='owner')return;
+ const password=E('newOwnerPassword').value;
+ if(password.length<10){E('securityStatus').textContent='Пароль должен содержать минимум 10 символов.';return}
+ try{
+  const {error}=await sb.auth.updateUser({password});
+  if(error)throw error;
+  E('newOwnerPassword').value='';
+  E('securityStatus').textContent='Пароль email-аккаунта владельца обновлён.';
+ }catch(e){E('securityStatus').textContent='Не удалось обновить пароль: '+authErrorText(e)}
+}
 async function rotateRecovery(){if(!confirm('Создать новый резервный код? Предыдущий перестанет работать.'))return;try{const r=await api('security',{rotateRecovery:true,expectedVersion:s.version});s=normalize(r.company);showCode('ownerRecoveryResult',r.recoveryCode);E('securityStatus').textContent='Резервный код обновлён. Сохраните его в надёжном месте.'}catch(e){E('securityStatus').textContent=e.message}}
 
 const sb=window.supabase?.createClient('https://vyavhynnybsinkiievbu.supabase.co',KEY,{auth:{persistSession:true,detectSessionInUrl:true}});
