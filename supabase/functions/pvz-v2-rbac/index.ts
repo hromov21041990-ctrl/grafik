@@ -55,10 +55,23 @@ function publicCompany(c:any,role:string,person:string|null=null){
   version:c.version,role,myEmployee:person
  };
 }
+
+const ruTranslit:Record<string,string>={
+ "а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ё":"e","ж":"zh","з":"z","и":"i","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"sch","ъ":"","ы":"y","ь":"","э":"e","ю":"yu","я":"ya"
+};
+function suggestMemberLogin(name:string){
+ let out="";
+ for(const ch of name.toLowerCase().normalize("NFKC"))out+=ruTranslit[ch]??(/[a-z0-9]/.test(ch)?ch:".");
+ out=out.replace(/\.+/g,".").replace(/^\.+|\.+$/g,"").slice(0,36).replace(/\.+$/,"");
+ if(out.length<3)out="user."+(out||"member");
+ return out.slice(0,40);
+}
+
 async function createSession(c:any,role:string,member:any=null){
  const token=rand(32);
  const {error}=await db.from("pvz2_sessions").insert({token_hash:await digest(token),company_id:c.id,role,member_id:member?.id||null,expires_at:new Date(Date.now()+24*3600*1000).toISOString()});
  if(error)throw Error("Ошибка создания сеанса");
+ if(member?.must_change_password)return {token,mustChangePassword:true,employee:member.employee_name,login:member.login};
  return {token,company:publicCompany(c,role,member?.employee_name||null)};
 }
 const emailUser=async(v:unknown)=>{if(typeof v!=="string"||v.length<40||v.length>6000)return null;const {data,error}=await db.auth.getUser(v);return error||!data.user?.email_confirmed_at?null:data.user;};
@@ -119,31 +132,68 @@ const {data:c,error:loadErr}=await db.from("pvz2_companies").select("*").eq("id"
 let member:any=null;
 if(s.role!=="owner"){
  if(!s.member_id)return resp(origin,403,{error:"Общий доступ отключён. Войдите по личному логину."});
- const {data:m}=await db.from("pvz2_members").select("id,employee_name,role,active").eq("id",s.member_id).eq("company_id",c.id).maybeSingle();
+ const {data:m}=await db.from("pvz2_members").select("id,employee_name,role,active,must_change_password,password_salt,password_hash").eq("id",s.member_id).eq("company_id",c.id).maybeSingle();
  if(!m||!m.active||m.role!==s.role||!(c.employees||[]).includes(m.employee_name))return resp(origin,403,{error:"Доступ сотрудника отозван"});
  member=m;
 }
+if(body.action==="memberChangePassword"){
+ if(!member||s.role==="owner")return resp(origin,403,{error:"Смена пароля доступна сотруднику"});
+ if(!member.must_change_password)return resp(origin,409,{error:"Смена временного пароля не требуется"});
+ const newPassword=body.newPassword;
+ if(!validPassword(newPassword))return resp(origin,400,{error:"Новый пароль должен содержать от 10 до 128 символов"});
+ if(await hash(newPassword,member.password_salt)===member.password_hash)return resp(origin,400,{error:"Придумайте новый пароль, отличный от временного"});
+ const salt=rand(16),password_hash=await hash(newPassword,salt);
+ const {data:changed,error:changeError}=await db.from("pvz2_members")
+   .update({password_salt:salt,password_hash,must_change_password:false}).eq("id",member.id).eq("company_id",c.id).eq("must_change_password",true)
+   .select("id").maybeSingle();
+ if(changeError)return resp(origin,500,{error:"Не удалось сохранить пароль"});
+ if(!changed)return resp(origin,409,{error:"Пароль уже изменён в другом окне — войдите заново"});
+ await db.from("pvz2_sessions").delete().eq("member_id",member.id).neq("token_hash",tokenHash);
+ return resp(origin,200,{token:bearer.slice(7),company:publicCompany(c,s.role,member.employee_name)});
+}
+if(member?.must_change_password)return resp(origin,403,{error:"Перед началом работы установите личный пароль",code:"PASSWORD_CHANGE_REQUIRED",employee:member.employee_name});
 if(body.action==="memberList"){
  if(s.role!=="owner")return resp(origin,403,{error:"Доступно владельцу"});
- const {data:list,error}=await db.from("pvz2_members").select("id,employee_name,login,role,active").eq("company_id",c.id).order("employee_name");
+ const {data:list,error}=await db.from("pvz2_members").select("id,employee_name,login,role,active,must_change_password").eq("company_id",c.id).order("employee_name");
  if(error)throw Error("Не удалось загрузить сотрудников");
  return resp(origin,200,{members:list||[]});
 }
+
 if(body.action==="memberIssue"){
  if(s.role!=="owner")return resp(origin,403,{error:"Доступно владельцу"});
  const who=String(body.employee||"");
  const requestedRole=body.memberRole==="admin"?"admin":"staff";
  if(!c.employees.includes(who))return resp(origin,400,{error:"Сотрудник не найден"});
  const {data:existing}=await db.from("pvz2_members").select("id,login").eq("company_id",c.id).eq("employee_name",who).maybeSingle();
+ const requested=typeof body.login==="string"?body.login.trim().toLowerCase():"";
+ const hasCustomLogin=typeof body.login==="string"&&requested!=="";
+ if(hasCustomLogin&&!/^[a-z0-9._-]{3,40}$/.test(requested))return resp(origin,400,{error:"Логин: 3–40 латинских букв, цифр, точек или дефисов"});
+ const {data:known,error:knownError}=await db.from("pvz2_members").select("id,login").eq("company_id",c.id);
+ if(knownError)return resp(origin,500,{error:"Не удалось проверить логины"});
+ let login=hasCustomLogin?requested:(existing?.login||suggestMemberLogin(who));
+ const used=new Set((known||[]).filter((m:any)=>m.id!==existing?.id).map((m:any)=>m.login));
+ if(!hasCustomLogin&&!existing){
+  const base=login;
+  for(let count=2;used.has(login)&&count<1000;count++){
+   const suffix="."+count;
+   login=base.slice(0,40-suffix.length).replace(/\.+$/,"")+suffix;
+  }
+ }
+ if(used.has(login))return resp(origin,409,{error:"Логин «"+login+"» уже используется сотрудником этой точки. Выберите другой."});
  const password=rand(12),salt=rand(16),password_hash=await hash(password,salt);
- let login=existing?.login||("u"+rand(6));
  let saved:any,error:any;
  if(existing){
-  ({data:saved,error}=await db.from("pvz2_members").update({role:requestedRole,password_salt:salt,password_hash,active:true}).eq("id",existing.id).eq("company_id",c.id).select("id,login,employee_name,role,active").single());
-  await db.from("pvz2_sessions").delete().eq("member_id",existing.id);
+  ({data:saved,error}=await db.from("pvz2_members")
+   .update({login,role:requestedRole,password_salt:salt,password_hash,active:true,must_change_password:true})
+   .eq("id",existing.id).eq("company_id",c.id)
+   .select("id,login,employee_name,role,active,must_change_password").single());
+  if(!error)await db.from("pvz2_sessions").delete().eq("member_id",existing.id);
  }else{
-  ({data:saved,error}=await db.from("pvz2_members").insert({company_id:c.id,employee_name:who,login,role:requestedRole,password_salt:salt,password_hash}).select("id,login,employee_name,role,active").single());
+  ({data:saved,error}=await db.from("pvz2_members")
+   .insert({company_id:c.id,employee_name:who,login,role:requestedRole,password_salt:salt,password_hash,must_change_password:true})
+   .select("id,login,employee_name,role,active,must_change_password").single());
  }
+ if(error?.code==="23505")return resp(origin,409,{error:"Этот логин уже занят. Укажите другой."});
  if(error||!saved)return resp(origin,500,{error:"Не удалось создать доступ"});
  return resp(origin,200,{member:saved,credentials:{login:saved.login,password}});
 }
