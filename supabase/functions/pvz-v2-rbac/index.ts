@@ -69,12 +69,24 @@ if(body.action==="memberLogin"){
  const code=String(body.code||"").trim().toLowerCase();
  const username=String(body.login||"").trim().toLowerCase();
  const password=body.password;
- if(!/^[a-z0-9-]{4,32}$/.test(code)||!/^[a-z0-9._-]{3,40}$/.test(username)||typeof password!=="string"||password.length>128)return resp(origin,401,{error:"Неверный логин или пароль"});
+ const denied=()=>resp(origin,401,{error:"Неверный логин или пароль"});
+ if(!/^[a-z0-9-]{4,32}$/.test(code)||!/^[a-z0-9._-]{3,40}$/.test(username)||typeof password!=="string"||password.length>128)return denied();
  const {data:c}=await db.from("pvz2_companies").select("*").eq("code",code).maybeSingle();
- if(!c)return resp(origin,401,{error:"Неверный логин или пароль"});
+ if(!c)return denied();
+ const keyHash=await digest(code+":"+username);
+ const now=Date.now();
+ const {data:lim}=await db.from("pvz2_member_login_attempts").select("attempts,blocked_until,updated_at").eq("key_hash",keyHash).maybeSingle();
+ if(lim?.blocked_until && Date.parse(lim.blocked_until)>now)return resp(origin,429,{error:"Слишком много попыток. Повторите вход через минуту."});
+ const fail=async()=>{
+  const recent=lim&&Date.parse(lim.updated_at)>now-60000&&!lim.blocked_until;
+  const count=(recent?Number(lim.attempts||0):0)+1;
+  await db.from("pvz2_member_login_attempts").upsert({key_hash:keyHash,attempts:count,blocked_until:count>=5?new Date(now+60000).toISOString():null,updated_at:new Date(now).toISOString()},{onConflict:"key_hash"});
+  return count>=5?resp(origin,429,{error:"Слишком много попыток. Повторите вход через минуту."}):denied();
+ };
  const {data:member}=await db.from("pvz2_members").select("*").eq("company_id",c.id).eq("login",username).eq("active",true).maybeSingle();
- if(!member||!(c.employees||[]).includes(member.employee_name))return resp(origin,401,{error:"Неверный логин или пароль"});
- if(await hash(password,member.password_salt)!==member.password_hash)return resp(origin,401,{error:"Неверный логин или пароль"});
+ if(!member||!(c.employees||[]).includes(member.employee_name))return await fail();
+ if(await hash(password,member.password_salt)!==member.password_hash)return await fail();
+ if(lim)await db.from("pvz2_member_login_attempts").delete().eq("key_hash",keyHash);
  return resp(origin,200,await createSession(c,member.role,member));
 }
 
@@ -99,22 +111,8 @@ if(body.action==="emailCreate"){
  if(error)return resp(origin,error.code==="23505"?409:500,{error:error.code==="23505"?"Код точки уже занят":"Не удалось создать точку"});
  return resp(origin,200,{point:{id:c.id,code:c.code,name:c.name}});
 }
-if(body.action==="register"){const code=String(body.code||""),name=String(body.name||"").trim(),owner=body.ownerPassword,staff=body.staffPassword;if(!/^[a-z0-9-]{4,32}$/.test(code)||name.length<2||name.length>100||typeof owner!=="string"||owner.length<10||owner.length>128||typeof staff!=="string"||staff.length<10||staff.length>128||!validEmployees(body.employees)||!validConfig(body.config)||!validRates(body.rates)||!validRoleState(body.jobRoles,body.employeeRoles,body.employees))return resp(origin,400,{error:"Проверьте название, код, пароли, сотрудников, график и ставки"});const ownerSalt=rand(16),staffSalt=rand(16),recoveryCode=makeRecovery();const {data,error}=await db.from("pvz2_companies").insert({code,name,owner_salt:ownerSalt,owner_hash:await hash(owner,ownerSalt),staff_salt:staffSalt,staff_hash:await hash(staff,staffSalt),recovery_hash:await digest(code+":"+cleanRecovery(recoveryCode)),employees:body.employees.map((x:string)=>x.trim()),config:body.config,rates:body.rates,job_roles:body.jobRoles||[],employee_roles:body.employeeRoles||{}}).select("*").single();if(error)return resp(origin,error.code==="23505"?409:500,{error:error.code==="23505"?"Код точки уже занят":"Ошибка регистрации"});return resp(origin,200,{...(await createSession(data,"owner")),recoveryCode})}
-if(body.action==="login"){if(body.role==="staff")return resp(origin,403,{error:"Общий пароль сотрудников отключён. Получите персональный логин и пароль у владельца."});const code=String(body.code||""),role=body.role,password=body.password;if(!/^[a-z0-9-]{4,32}$/.test(code)||!["owner","staff"].includes(role)||typeof password!=="string"||password.length>128)return resp(origin,401,{error:"Неверный код или пароль"});const {data:c}=await db.from("pvz2_companies").select("*").eq("code",code).maybeSingle();if(!c)return resp(origin,401,{error:"Неверный код или пароль"});const h=await hash(password,role==="owner"?c.owner_salt:c.staff_salt);if(h!==(role==="owner"?c.owner_hash:c.staff_hash))return resp(origin,401,{error:"Неверный код или пароль"});return resp(origin,200,await createSession(c,role))}
-if(body.action==="resetPassword"){
- const code=typeof body.code==="string"?body.code.trim().toLowerCase():"";
- const recovery=typeof body.recoveryCode==="string"?cleanRecovery(body.recoveryCode):"";
- if(!/^[a-z0-9-]{4,32}$/.test(code)||!/^[0-9a-f]{48}$/.test(recovery)||!validPassword(body.newPassword))return resp(origin,400,{error:"Проверьте код точки, резервный код и новый пароль (10+ символов)"});
- const {data:c}=await db.from("pvz2_companies").select("id,recovery_hash").eq("code",code).maybeSingle();
- const expected=await digest(code+":"+recovery);
- if(!c||!c.recovery_hash||c.recovery_hash!==expected)return resp(origin,401,{error:"Неверный код восстановления или код точки"});
- const salt=rand(16),nextRecoveryCode=makeRecovery(),nextHash=await digest(code+":"+cleanRecovery(nextRecoveryCode));
- const {data:changed,error}=await db.from("pvz2_companies")
- .update({owner_salt:salt,owner_hash:await hash(body.newPassword,salt),recovery_hash:nextHash})
- .eq("id",c.id).eq("recovery_hash",expected).select("id").maybeSingle();
- if(error||!changed)return resp(origin,409,{error:"Не удалось восстановить пароль. Повторите попытку"});
- await db.from("pvz2_sessions").delete().eq("company_id",c.id);
- return resp(origin,200,{ok:true,recoveryCode:nextRecoveryCode});
+if(body.action==="register"||body.action==="login"||body.action==="resetPassword"){
+ return resp(origin,403,{error:"Используйте вход и регистрацию владельца по email или личный логин сотрудника."});
 }
 const bearer=req.headers.get("authorization")||"";if(!bearer.startsWith("Bearer ")||bearer.length>150)return resp(origin,401,{error:"Требуется вход"});const tokenHash=await digest(bearer.slice(7));const {data:s}=await db.from("pvz2_sessions").select("company_id,role,member_id").eq("token_hash",tokenHash).gt("expires_at",new Date().toISOString()).maybeSingle();if(!s)return resp(origin,401,{error:"Сеанс истёк. Войдите снова"});if(body.action==="logout"){await db.from("pvz2_sessions").delete().eq("token_hash",tokenHash);return resp(origin,200,{ok:true})}
 const {data:c,error:loadErr}=await db.from("pvz2_companies").select("*").eq("id",s.company_id).single();if(loadErr||!c)return resp(origin,404,{error:"Точка не найдена"});
