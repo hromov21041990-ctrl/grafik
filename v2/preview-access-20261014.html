@@ -540,7 +540,7 @@ body.member-credentials-open{overflow:hidden}
     <div class="formfield"><label for="start">Начало</label><input id="start" type="time"></div>
     <div class="formfield"><label for="end">Окончание</label><input id="end" type="time"></div>
    </div>
-   <p id="roleRatePreview" class="formnote"></p><div class="work-actions"><button class="primary" onclick="assign()">Сохранить назначение</button><button type="button" onclick="closeAssignment()">Отмена</button></div>
+   <p id="roleRatePreview" class="formnote"></p><p id="assignmentError" class="error" role="alert" aria-live="assertive"></p><div class="work-actions"><button class="primary" onclick="assign()">Сохранить назначение</button><button type="button" onclick="closeAssignment()">Отмена</button></div>
   </section>
  </div>
   <section id="myPaySection" class="card pay-card hide"><div class="card-header"><div><h2>Мои начисления</h2><p>Личный расчёт по назначенным сменам. Только просмотр.</p></div></div><div id="myPayBody"></div></section><section id="paySection" class="card pay-card hide">
@@ -800,6 +800,9 @@ function chooseShift(date,position){
  lastAssignmentTrigger=document.activeElement;
  E('date').value=date;
  E('position').value=String(position);
+ E('assignmentError').textContent='';
+ E('start').value=s.config.opens;
+ E('end').value=s.config.closes;
  renderRoleSelect(true);
  E('assignmentOverlay').classList.remove('hide');
  document.body.classList.add('assignment-open');
@@ -1040,13 +1043,14 @@ async function mutate(action,p){
   if(Number(r.company.version)>=Number(s.version))s=normalize(r.company);
   draw();syncLabel('Сохранено и синхронизировано · '+syncClock(),'ok');
   E('status').textContent='Сохранено. Остальные устройства увидят изменение автоматически.';
-  if(action==='assign')closeAssignment();
+  if(action==='assign'){E('assignmentError').textContent='';closeAssignment()}
   if(action==='settings'){E('owner').classList.add('hide');renderMemberAccess()}
  }catch(e){
   if(session!==token)return;
   const message=String(e.message||'Ошибка сохранения');
   needSync=/изменил|изменился|изменены|занято|назначен|Обновите страницу|не найдена/i.test(message);
   E('status').textContent='Не сохранено: '+message+(needSync?' Загружаем свежий график.':'');
+  if(action==='assign')E('assignmentError').textContent=message;
  }finally{
   mutateBusy=false;
   if(needSync&&session===token)await syncNow(true);
@@ -1055,7 +1059,7 @@ async function mutate(action,p){
 async function assign(){
  if(!s||mutateBusy||!['owner','admin'].includes(s.role))return;
  const role=E('jobRole').value;
- if(s.jobRoles.length&&!role){E('status').textContent='Выберите должность';return}
+ if(s.jobRoles.length&&!role){E('assignmentError').textContent='Выберите должность для сотрудника';return}
  await mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,kind:E('kind').value,start:E('start').value,end:E('end').value,jobRoleId:role});
 }
 function removeShift(id){if(!s||!['owner','admin'].includes(s.role))return;if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
