@@ -452,7 +452,7 @@ body.assignment-open{overflow:hidden}
      <div class="formfield wide"><label for="role">Роль</label><select id="role"><option value="owner">Владелец</option><option value="staff">Сотрудник / Администратор</option></select></div>
      <div class="formfield wide"><label for="pass">Пароль</label><div class="pass-wrap"><input id="pass" type="password" autocomplete="current-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('pass',this)">◉</button></div></div>
     </div>
-    <p id="ownerLoginHint" class="formnote">Используйте пароль, который вы задали при регистрации <b>email-аккаунта</b>, а не пароль точки. Если Safari подставил другой пароль, выберите нужную запись в «Паролях».</p><button class="primary buttonwide" onclick="login()">Войти в график →</button><button id="forgotPasswordBtn" class="text-link" type="button" onclick="emailReset()">Забыли пароль владельца?</button><p id="staffLoginHint" class="formnote hide">Код точки, личный логин и пароль выдаёт владелец. Права определяются аккаунтом.</p>
+    <p id="ownerLoginHint" class="formnote">Используйте пароль, который вы задали при регистрации <b>email-аккаунта</b>, а не пароль точки. Если Safari подставил другой пароль, выберите нужную запись в «Паролях».</p><button class="primary buttonwide" onclick="login()">Войти в график →</button><button id="forgotPasswordBtn" class="text-link" type="button" onclick="emailReset()">Забыли пароль владельца?</button><p id="staffLoginHint" class="formnote hide">Код точки, личный логин и пароль выдаёт владелец. Права определяются вашим аккаунтом.</p>
    </div>
    <div id="recoveryForm" class="hide"><h2>Восстановление доступа</h2><p class="formnote">Введите код точки, резервный код владельца и новый пароль. Резервный код выдаётся при регистрации или в настройках.</p><div class="grid-form"><div class="formfield wide"><label for="recoverCompany">Код точки</label><input id="recoverCompany" autocomplete="off"></div><div class="formfield wide"><label for="recoverCode">Резервный код</label><input id="recoverCode" autocomplete="off"></div><div class="formfield wide"><label for="recoverPassword">Новый пароль владельца</label><div class="pass-wrap"><input id="recoverPassword" type="password" autocomplete="new-password"><button type="button" aria-label="Показать пароль" onclick="togglePassword('recoverPassword',this)">◉</button></div></div></div><button class="primary buttonwide" onclick="recoverPassword()">Установить новый пароль</button><button class="text-link" onclick="showRecovery(false)">Назад ко входу</button></div><div id="recoveryResult" class="recovery-panel hide"></div>
    <div id="emailPasswordReset" class="hide"><h2>Создать новый пароль</h2><p class="formnote">Ссылка восстановления подтверждена. Придумайте новый пароль для входа по email.</p><label for="emailNewPassword">Новый пароль (от 10 символов)</label><div class="pass-wrap"><input id="emailNewPassword" type="password" autocomplete="new-password"><button type="button" onclick="togglePassword('emailNewPassword',this)">◉</button></div><label for="emailNewPasswordConfirm" style="margin-top:12px">Повторите новый пароль</label><div class="pass-wrap"><input id="emailNewPasswordConfirm" type="password" autocomplete="new-password"><button type="button" onclick="togglePassword('emailNewPasswordConfirm',this)">◉</button></div><button class="primary buttonwide" onclick="applyEmailPassword()">Сохранить новый пароль</button><p id="emailPasswordStatus" class="formnote" role="status"></p></div><p id="error" class="error" role="alert"></p>
@@ -802,7 +802,7 @@ function draw(){
  E('myPaySection').classList.toggle('hide',s.role==='owner');
  E('mobileNav').classList.remove('hide');
  document.body.classList.add('has-mobile-help-nav');
- E('mobileNav').querySelectorAll('button').forEach((el,i)=>{if(i===1){el.classList.toggle('hide',s.role==='owner');el.setAttribute('onclick',"mobileJump('myPaySection')")}if(i===2)el.classList.toggle('hide',s.role!=='owner')});
+ E('mobileNav').querySelectorAll('button').forEach((el,i)=>{if(i===1){el.classList.remove('hide');el.setAttribute('onclick',s.role==='owner'?"mobileJump('paySection')":"mobileJump('myPaySection')")}if(i===2)el.classList.toggle('hide',s.role!=='owner')});
  if(s.role!=='owner')E('owner').classList.add('hide');
  const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
@@ -1297,7 +1297,7 @@ if(sb)sb.auth.getSession().then(({data,error})=>{
 </script>
 <div id="updateNotice" hidden role="status"><span>Доступна новая версия «По графику».</span><button type="button" onclick="updateAppNow()">Обновить</button></div>
 <script>
-const CURRENT_BUILD='2026-10-14-individual-access-preview-1';
+const CURRENT_BUILD='2026-10-14-rbac-1';
 let lastUpdateCheck=0;
 async function checkAppUpdate(force=false){
  if(!force&&Date.now()-lastUpdateCheck<30000)return;
