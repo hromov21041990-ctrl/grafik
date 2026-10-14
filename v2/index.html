@@ -628,11 +628,11 @@ window.addEventListener('online',()=>syncNow(true));
 function normalize(v){return {...v,schedule:Array.isArray(v.schedule)?v.schedule:[],payments:v.payments&&typeof v.payments==='object'?v.payments:{},jobRoles:Array.isArray(v.jobRoles)?v.jobRoles:[],employeeRoles:v.employeeRoles&&typeof v.employeeRoles==='object'?v.employeeRoles:{}}}
 function moveWeek(n){E('week').value=add(monday(E('week').value||iso(new Date())),7*n);draw()}
 function currentWeek(){E('week').value=monday(iso(new Date()));draw()}
-function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el.classList.contains('hide')){fill();el.scrollIntoView({behavior:'smooth',block:'start'})}}
+function toggleSettings(){const el=E('owner');el.classList.toggle('hide');if(!el.classList.contains('hide')){fill();renderMemberAccess();el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function navTo(id){
  if(id==='owner'||id==='editNames'){
   if(!s||s.role!=='owner')return;
-  if(E('owner').classList.contains('hide')){fill();E('owner').classList.remove('hide')}
+  if(E('owner').classList.contains('hide')){fill();E('owner').classList.remove('hide');renderMemberAccess()}
   const dest=id==='editNames'?E('editNames'):E('owner');
   dest.scrollIntoView({behavior:'smooth',block:'start'});
   return;
@@ -760,7 +760,7 @@ function closeAssignment(){
  lastAssignmentTrigger=null;
 }
 function chooseShift(date,position){
- if(!s)return;
+ if(!s||!['owner','admin'].includes(s.role))return;
  lastAssignmentTrigger=document.activeElement;
  E('date').value=date;
  E('position').value=String(position);
@@ -799,8 +799,10 @@ function draw(){
  E('quickSlots').textContent=free+' свободных мест на неделю';
  E('settingsBtn').classList.toggle('hide',s.role!=='owner');
  E('paySection').classList.toggle('hide',s.role!=='owner');
- E('mobileNav').classList.toggle('hide',s.role!=='owner');
- document.body.classList.toggle('has-mobile-help-nav',s.role==='owner');
+ E('myPaySection').classList.toggle('hide',s.role==='owner');
+ E('mobileNav').classList.remove('hide');
+ document.body.classList.add('has-mobile-help-nav');
+ E('mobileNav').querySelectorAll('button').forEach((el,i)=>{if(i===1){el.classList.toggle('hide',s.role==='owner');el.setAttribute('onclick',"mobileJump('myPaySection')")}if(i===2)el.classList.toggle('hide',s.role!=='owner')});
  if(s.role!=='owner')E('owner').classList.add('hide');
  const existingEmp=E('employee').value,existingPos=E('position').value;
  E('employee').innerHTML=s.employees.map((x,i)=>'<option value="'+i+'">'+esc(x)+'</option>').join('');
@@ -823,10 +825,10 @@ function draw(){
    Array.from({length:s.config.positions},(_,p)=>{
     if(!open)return '<td data-slot="Смена №'+(p+1)+'">Выходной</td>';
     const r=all.find(v=>v.date===d&&v.position===p);
-    if(!r)return '<td data-slot="Смена №'+(p+1)+'"><button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></td>';
+    if(!r)return '<td data-slot="Смена №'+(p+1)+'">'+(['owner','admin'].includes(s.role)?'<button class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button>':'<div class="slotbtn" style="cursor:default">Свободно</div>')+'</td>';
     return '<td data-slot="Смена №'+(p+1)+'"><div class="slot busy"><span class="person">'+esc(r.employee)+'</span>'+(r.jobRoleName?'<small class="job-shift-tag">'+esc(r.jobRoleName)+'</small>':'')+
       '<div class="shift-time">'+esc(r.start)+'–'+esc(r.end)+(r.kind==='half'?' · полсмены':'')+'</div>'+
-      (s.role==='owner'?'<span class="shift-pay">'+rub(r.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
+      (s.role==='owner'||r.employee===s.myEmployee&&Number.isFinite(r.pay)?'<span class="shift-pay">'+rub(r.pay)+'</span><br>':'')+(['owner','admin'].includes(s.role)?'<button class="remove-btn" onclick="removeShift(\''+r.id+'\')">Снять запись</button>':'')+
       '</div></td>';
    }).join('')+'</tr>';
  }).join('');
@@ -842,12 +844,12 @@ function draw(){
   const remaining=day.open?(free?free+' свободно':'Все занято'):'Нет смен';
   const slots=day.open?Array.from({length:s.config.positions},(_,p)=>{
    const item=dayRows.find(v=>v.position===p);
-   if(!item)return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b><button type="button" class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button></div>';
-   return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b><div class="slot busy"><span class="person">'+esc(item.employee)+'</span>'+(item.jobRoleName?'<small class="job-shift-tag">'+esc(item.jobRoleName)+'</small>':'')+'<div class="shift-time">'+esc(item.start)+'–'+esc(item.end)+(item.kind==='half'?' · полсмены':'')+'</div>'+(s.role==='owner'?'<span class="shift-pay">'+rub(item.pay)+'</span><br><button class="remove-btn" onclick="removeShift(\''+item.id+'\')">Снять запись</button>':'')+'</div></div>';
+   if(!item)return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b>'+(['owner','admin'].includes(s.role)?'<button type="button" class="slotbtn" onclick="chooseShift(\''+d+'\','+p+')">Свободно<small>＋ Назначить</small></button>':'<div class="slotbtn" style="cursor:default">Свободно</div>')+'</div>';
+   return '<div class="mobile-slot"><b>Смена №'+(p+1)+'</b><div class="slot busy"><span class="person">'+esc(item.employee)+'</span>'+(item.jobRoleName?'<small class="job-shift-tag">'+esc(item.jobRoleName)+'</small>':'')+'<div class="shift-time">'+esc(item.start)+'–'+esc(item.end)+(item.kind==='half'?' · полсмены':'')+'</div>'+(s.role==='owner'||item.employee===s.myEmployee&&Number.isFinite(item.pay)?'<span class="shift-pay">'+rub(item.pay)+'</span><br>':'')+(['owner','admin'].includes(s.role)?'<button class="remove-btn" onclick="removeShift(\''+item.id+'\')">Снять запись</button>':'')+'</div></div>';
   }).join(''):'<div class="mobile-no-work">В этот день точка не работает</div>';
   return '<details class="mobile-day'+(day.dow>=5?' mobile-weekend':'')+(d===today?' mobile-today':'')+'" data-date="'+d+'"'+(open?' open':'')+'><summary><span class="mobile-day-date"><strong>'+weekday+'</strong><small>'+fmt(d)+'</small></span><span class="mobile-day-count"><b>'+status+'</b><small>'+remaining+'</small></span><span class="mobile-chevron" aria-hidden="true">›</span></summary><div class="mobile-day-content">'+slots+'</div></details>';
  }).join('');
- if(s.role==='owner')renderPayroll();
+ if(s.role==='owner')renderPayroll();else renderMyPay();
 }
 function payrollData(){
  if(!s)return {rows:[],all:false};
@@ -871,9 +873,8 @@ async function changePayrollMode(select){
  if(mutateBusy){select.value=previous;return}
  mutateBusy=true;select.disabled=true;
  try{
-  const result=await sb.rpc('pvz2_monthly_payroll',{p_token:token,p_op:'mode',p_period:mode,p_employee:'',p_amount:null,p_version:s.version});
-  if(result.error)throw Error(result.error.message||'Не удалось сохранить режим');
-  s={...s,config:result.data.config,version:Number(result.data.version)};
+  const response=await api('payrollMonthly',{operation:'mode',period:mode,employee:'',amount:null,expectedVersion:s.version});
+  s={...s,config:response.result.config,version:Number(response.result.version)};
   E('payMode').value=mode;
   draw();
   syncLabel('Режим выплат сохранён · '+syncClock(),'ok');
@@ -911,9 +912,8 @@ async function monthlyAction(op,encoded,amount=null){
  if(op!=='advance'&&!confirm('Подтвердить действие для '+name+'?'))return;
  mutateBusy=true;
  try{
-  const result=await sb.rpc('pvz2_monthly_payroll',{p_token:token,p_op:op,p_period:E('payrollMonth').value||iso(new Date()).slice(0,7),p_employee:name,p_amount:amount,p_version:s.version});
-  if(result.error)throw Error(result.error.message);
-  s={...s,payments:result.data.payments,config:result.data.config,version:Number(result.data.version)};
+  const response=await api('payrollMonthly',{operation:op,period:E('payrollMonth').value||iso(new Date()).slice(0,7),employee:name,amount,expectedVersion:s.version});
+  s={...s,payments:response.result.payments,config:response.result.config,version:Number(response.result.version)};
   draw();syncLabel('Сохранено · '+syncClock(),'ok');
  }catch(e){E('status').textContent='Не сохранено: '+e.message;await syncNow(true)}
  finally{mutateBusy=false}
@@ -962,9 +962,8 @@ async function payrollAction(operation,name,amount){
  if(!s||s.role!=='owner'||mutateBusy)return;
  mutateBusy=true;
  try{
-  const result=await sb.rpc('pvz2_owner_payroll',{p_token:token,p_week:E('payrollWeek').value==='all'?'all':monday(E('week').value),p_employee:name,p_operation:operation,p_amount:amount===undefined?null:amount,p_expected_version:s.version});
-  if(result.error)throw Error(result.error.message);
-  s={...s,payments:result.data.payments,version:Number(result.data.version)};
+  const response=await api('payrollWeekly',{week:E('payrollWeek').value==='all'?'all':monday(E('week').value),employee:name,operation,amount:amount===undefined?null:amount,expectedVersion:s.version});
+  s={...s,payments:response.result.payments,version:Number(response.result.version)};
   renderPayroll();syncLabel('Сохранено · '+syncClock(),'ok');
  }catch(e){E('status').textContent='Ошибка сохранения: '+e.message}
  finally{mutateBusy=false}
@@ -1006,7 +1005,7 @@ async function mutate(action,p){
   draw();syncLabel('Сохранено и синхронизировано · '+syncClock(),'ok');
   E('status').textContent='Сохранено. Остальные устройства увидят изменение автоматически.';
   if(action==='assign')closeAssignment();
-  if(action==='settings')E('owner').classList.add('hide');
+  if(action==='settings'){E('owner').classList.add('hide');renderMemberAccess()}
  }catch(e){
   if(session!==token)return;
   const message=String(e.message||'Ошибка сохранения');
@@ -1018,20 +1017,12 @@ async function mutate(action,p){
  }
 }
 async function assign(){
- if(!s||mutateBusy)return;
- const employee=s.employees[+E('employee').value],role=E('jobRole').value;
+ if(!s||mutateBusy||!['owner','admin'].includes(s.role))return;
+ const role=E('jobRole').value;
  if(s.jobRoles.length&&!role){E('status').textContent='Выберите должность';return}
- if(s.role!=='owner'&&s.jobRoles.length&&s.employeeRoles?.[employee]!==role){E('status').textContent='Должность меняет владелец';return}
- mutateBusy=true;
- try{
-  const {data,error}=await sb.rpc('pvz2_assign_with_role',{p_token:token,p_date:E('date').value,p_position:+E('position').value,p_employee_index:+E('employee').value,p_kind:E('kind').value,p_start:E('start').value,p_end:E('end').value,p_role_id:role,p_expected_version:s.version});
-  if(error)throw Error(error.message);
-  s={...s,schedule:data.schedule,employeeRoles:data.employeeRoles,version:Number(data.version)};
-  closeAssignment();draw();syncLabel('Должность и смена сохранены · '+syncClock(),'ok');
- }catch(e){E('status').textContent='Не сохранено: '+e.message}
- finally{mutateBusy=false}
+ await mutate('assign',{date:E('date').value,position:+E('position').value,employeeIndex:+E('employee').value,kind:E('kind').value,start:E('start').value,end:E('end').value,jobRoleId:role});
 }
-function removeShift(id){if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
+function removeShift(id){if(!s||!['owner','admin'].includes(s.role))return;if(confirm('Снять сотрудника со смены?'))mutate('remove',{id})}
 function settings(){
  if(editVersion!==s.version){E('status').textContent='Данные точки изменились. Закройте настройки и откройте снова.';return}
  try{
@@ -1050,7 +1041,7 @@ function showCode(id,code){const box=E(id);box.classList.remove('hide');box.inne
 function copyRecovery(code){if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(code).then(()=>alert('Код скопирован')).catch(()=>prompt('Скопируйте код',code));else prompt('Скопируйте код',code)}
 function showRecovery(show){E('recoveryForm').classList.toggle('hide',!show);E('signin').classList.toggle('hide',show);E('reg').classList.add('hide');E('error').textContent='';E('recoveryResult').classList.add('hide');if(show)E('recoverCompany').value=E('signinCode').value}
 async function recoverPassword(){try{const code=E('recoverCompany').value.trim().toLowerCase();const r=await api('resetPassword',{code,recoveryCode:E('recoverCode').value,newPassword:E('recoverPassword').value});showCode('recoveryResult',r.recoveryCode);E('error').textContent='Пароль владельца изменён. Сохраните новый резервный код, затем войдите с новым паролем.';E('recoverCode').value='';E('recoverPassword').value=''}catch(e){E('error').textContent=e.message}}
-async function changePasswords(){const owner=E('newOwnerPassword').value,staff=E('newStaffPassword').value;if(!owner&&!staff)return E('securityStatus').textContent='Введите новый пароль владельца или сотрудников.';const patch={};if(owner)patch.ownerPassword=owner;if(staff)patch.staffPassword=staff;try{const r=await api('security',{...patch,expectedVersion:s.version});s=normalize(r.company);E('newOwnerPassword').value='';E('newStaffPassword').value='';E('securityStatus').textContent='Пароли обновлены. Другим устройствам потребуется повторный вход.'}catch(e){E('securityStatus').textContent=e.message}}
+async function changePasswords(){const owner=E('newOwnerPassword').value;if(!owner)return E('securityStatus').textContent='Введите новый пароль владельца.';const patch={ownerPassword:owner};try{const r=await api('security',{...patch,expectedVersion:s.version});s=normalize(r.company);E('newOwnerPassword').value='';E('securityStatus').textContent='Пароли обновлены. Другим устройствам потребуется повторный вход.'}catch(e){E('securityStatus').textContent=e.message}}
 async function rotateRecovery(){if(!confirm('Создать новый резервный код? Предыдущий перестанет работать.'))return;try{const r=await api('security',{rotateRecovery:true,expectedVersion:s.version});s=normalize(r.company);showCode('ownerRecoveryResult',r.recoveryCode);E('securityStatus').textContent='Резервный код обновлён. Сохраните его в надёжном месте.'}catch(e){E('securityStatus').textContent=e.message}}
 
 const sb=window.supabase?.createClient('https://vyavhynnybsinkiievbu.supabase.co',KEY,{auth:{persistSession:true,detectSessionInUrl:true}});
