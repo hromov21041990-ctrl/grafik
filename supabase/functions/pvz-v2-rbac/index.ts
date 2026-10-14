@@ -186,7 +186,7 @@ else if(body.action==="security"){
 else if(body.action==="assign"){
  if(s.role!=="owner"&&s.role!=="admin")return resp(origin,403,{error:"Назначение смен доступно владельцу или администратору"});
  const date=body.date,position=body.position,idx=body.employeeIndex,kind=body.kind,start=body.start,end=body.end;
- if(typeof date!=="string"||!/^20\\d{2}-\\d{2}-\\d{2}$/.test(date)||!Number.isInteger(position)||position<0||position>=c.config.positions||!Number.isInteger(idx)||idx<0||idx>=c.employees.length||!["shift","half","hour"].includes(kind)||typeof start!=="string"||typeof end!=="string"||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(start)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(end)||start>=end||start<c.config.opens||end>c.config.closes)return resp(origin,400,{error:"Проверьте дату, сотрудника и время смены"});
+ if(typeof date!=="string"||!/^20\d{2}-\d{2}-\d{2}$/.test(date)||!Number.isInteger(position)||position<0||position>=c.config.positions||!Number.isInteger(idx)||idx<0||idx>=c.employees.length||!["shift","half","hour"].includes(kind)||typeof start!=="string"||typeof end!=="string"||!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(end)||start>=end||start<c.config.opens||end>c.config.closes)return resp(origin,400,{error:"Проверьте дату, сотрудника и время смены"});
  const parsed=new Date(date+"T12:00:00");
  if(!Number.isFinite(parsed.getTime())||parsed.getFullYear()!==Number(date.slice(0,4))||parsed.getMonth()+1!==Number(date.slice(5,7))||parsed.getDate()!==Number(date.slice(8,10)))return resp(origin,400,{error:"Неверная дата"});
  const day=(parsed.getDay()+6)%7;
